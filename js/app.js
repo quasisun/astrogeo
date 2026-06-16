@@ -619,8 +619,69 @@
   }
 
   /* ---------- Кнопки шапки ---------- */
+  /* ---------- Скачивание PDF-отчёта (полностью в браузере) ---------- */
+  function loadHtml2pdf(){
+    if(window.html2pdf) return Promise.resolve();
+    return new Promise(function(res,rej){
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
+      s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+  // снимок карты в режиме «весь мир» (с текущими видимыми линиями)
+  function mapSnapshot(){
+    var mv=state.map; if(!mv) return '';
+    var save={z:mv.z,panX:mv.panX,panY:mv.panY,heat:mv.showHeat};
+    mv.showHeat=false; mv.z=1; mv.panX=0; mv.clampPan(); mv.draw();
+    var url=mv.cv.toDataURL('image/jpeg',0.92);
+    mv.z=save.z; mv.panX=save.panX; mv.panY=save.panY; mv.showHeat=save.heat; mv.clampPan(); mv.draw();
+    return url;
+  }
+  function buildReportEl(){
+    var b=state.bodies, ch=state.chart;
+    var wrap=document.createElement('div');
+    wrap.style.cssText='width:760px;padding:30px;font-family:Arial,sans-serif;color:#2a2326;background:#fff;box-sizing:border-box;';
+    var head='<div style="border-bottom:3px solid #df2227;padding-bottom:14px;margin-bottom:18px;">'+
+      '<div style="font-family:Jaipur,Jost,serif;font-size:26px;color:#df2227;font-weight:bold;">Джйотиш Астрокартография</div>'+
+      '<div style="font-size:13px;color:#6b6166;margin-top:2px;">Персональный отчёт · сидерический зодиак · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</div>'+
+      '<div style="font-size:13.5px;margin-top:6px;"><b>'+state.place.label+'</b> · '+ch.date+' '+ch.time+' (UTC'+(ch.tz>=0?'+':'')+ch.tz+')</div></div>';
+    var snap=mapSnapshot();
+    var mapImg=snap?'<div style="font-family:Jaipur,Jost,serif;font-size:17px;margin:0 0 8px;">Карта астрокартографии</div><img src="'+snap+'" style="width:100%;border:1px solid #eee;border-radius:8px;margin-bottom:18px;">':'';
+    var natal='<div style="font-family:Jaipur,Jost,serif;font-size:17px;margin:0 0 8px;">Натальная карта</div>'+$('natal-body').innerHTML+'<div style="height:18px;"></div>';
+    var report=$('pane-report').innerHTML;
+    wrap.innerHTML=head+mapImg+natal+report;
+    // лёгкая печатная адаптация
+    [].forEach.call(wrap.querySelectorAll('.card'),function(c){c.style.boxShadow='none';c.style.pageBreakInside='avoid';c.style.breakInside='avoid';});
+    return wrap;
+  }
+  function generatePDF(){
+    if(!state.bodies){ alert('Сначала рассчитайте карту мира.'); return; }
+    var btn=$('btn-pdf'), old=btn.textContent;
+    btn.textContent='Готовлю PDF…'; btn.disabled=true;
+    var safe=(state.place.label||'chart').replace(/[^\wа-яёА-ЯЁ-]+/gi,'_');
+    var fontsReady=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+    Promise.all([loadHtml2pdf(),fontsReady]).then(function(){
+      var el=buildReportEl();
+      el.style.position='absolute'; el.style.left='-9999px'; el.style.top='0';
+      document.body.appendChild(el);
+      var opt={
+        margin:[8,8,10,8],
+        filename:'Джйотиш_астрокартография_'+safe+'.pdf',
+        image:{type:'jpeg',quality:0.95},
+        html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        pagebreak:{mode:['css','legacy']}
+      };
+      return window.html2pdf().set(opt).from(el).save().then(function(){ el.remove(); });
+    }).catch(function(){
+      alert('Не удалось загрузить генератор PDF (нужен интернет). Откроется окно печати — выберите «Сохранить как PDF».');
+      window.print();
+    }).then(function(){ btn.textContent=old; btn.disabled=false; });
+  }
+
   function setupHeader(){
-    $('btn-print').onclick=function(){window.print();};
+    $('btn-pdf').onclick=generatePDF;
     $('btn-report').onclick=function(){
       if(!state.bodies){alert('Сначала рассчитайте карту.');return;}
       document.querySelector('[data-pane="report"]').click();
