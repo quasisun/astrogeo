@@ -146,6 +146,11 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass  # тише
 
+    def end_headers(self):
+        # запретить кеширование, чтобы правки всегда подхватывались браузером
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        super().end_headers()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == '/api/chart':
@@ -182,7 +187,6 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
-        self.send_header('Cache-Control', 'no-store')
         self.end_headers()
         self.wfile.write(body)
 
