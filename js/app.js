@@ -27,6 +27,43 @@
   }
   function estimateTZ(lon){ return Math.round(lon/15); }
 
+  /* ---------- Геокодер: бэкенд (server.py) или напрямую OpenStreetMap ----------
+     На GitHub Pages / в Tilda бэкенда нет — тогда обращаемся к Nominatim из браузера. */
+  var GEO_PREFIXES = ['городской округ ','муниципальное образование ','сельское поселение ',
+    'городское поселение ','посёлок городского типа ','полярная станция ',
+    'деревня ','село ','посёлок ','город '];
+  function cleanName(s){
+    s=(s||'').trim(); var low=s.toLowerCase();
+    for(var i=0;i<GEO_PREFIXES.length;i++){ if(low.indexOf(GEO_PREFIXES[i])===0) return s.slice(GEO_PREFIXES[i].length); }
+    return s;
+  }
+  function parseNominatim(data){
+    if(!Array.isArray(data)) return [];
+    var out=[], seen={};
+    data.forEach(function(it){
+      var a=it.address||{};
+      var name=cleanName(a.city||a.town||a.village||a.hamlet||it.name||a.municipality||(it.display_name||'').split(',')[0]);
+      var lat=parseFloat(it.lat), lon=parseFloat(it.lon);
+      if(isNaN(lat)||isNaN(lon)) return;
+      var key=Math.round(lat*1000)/1000+','+Math.round(lon*1000)/1000;
+      if(seen[key]) return; seen[key]=1;
+      out.push({name:name, region:a.state||a.region||a.county||'', country:a.country||'',
+                lat:lat, lon:lon, remote:true, continent:''});
+    });
+    return out;
+  }
+  function geocodeNominatim(q){
+    var url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&accept-language=ru&q='+encodeURIComponent(q);
+    return fetch(url).then(function(r){return r.ok?r.json():[];}).then(parseNominatim).catch(function(){return [];});
+  }
+  // Сначала пробуем локальный бэкенд; если его нет — напрямую в OpenStreetMap.
+  function geocodeQuery(q){
+    return fetch('/api/geocode?q='+encodeURIComponent(q))
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(arr){ if(Array.isArray(arr)) { arr.forEach(function(x){x.remote=true;}); return arr; } throw 0; })
+      .catch(function(){ return geocodeNominatim(q); });
+  }
+
   /* ---------- Автодополнение городов (локальная база + геокодер мира) ---------- */
   function setupAutocomplete(inputId, listId, onPick){
     var input=$(inputId), list=$(listId), sel=-1, items=[], reqId=0, timer=null, loading=false;
@@ -67,8 +104,7 @@
       if(q.length<2) return;
       var myReq=++reqId;
       timer=setTimeout(function(){
-        fetch('/api/geocode?q='+encodeURIComponent(q))
-          .then(function(r){return r.ok?r.json():[];})
+        geocodeQuery(q)
           .then(function(arr){
             if(myReq!==reqId) return;            // ответ устарел
             loading=false;
