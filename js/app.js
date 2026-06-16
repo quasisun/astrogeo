@@ -497,7 +497,7 @@
     var html='<h2 class="section-title">Рекомендации по миру</h2><p class="section-sub">Рассчитано по '+scored.length+' городам на основе вашей сидерической карты. Нажмите на карточку, чтобы найти город на карте.</p>';
     REC_CATS.forEach(function(cat){
       var ranked=scored.map(function(c){return {c:c,s:catScore(c,cat.areas)};}).sort(function(a,b){return b.s-a.s;}).slice(0,6);
-      html+='<h3 style="font-family:var(--font-head);margin:22px 0 4px;">'+cat.title+'</h3><p class="section-sub">'+cat.sub+'</p><div class="grid-cards">';
+      html+='<h3 style="margin:22px 0 4px;">'+cat.title+'</h3><p class="section-sub">'+cat.sub+'</p><div class="grid-cards">';
       ranked.forEach(function(r,i){ html+=recCardHTML(i+1,r.c,r.s,cat.areas); });
       html+='</div>';
     });
@@ -505,7 +505,7 @@
     html+='<h2 class="section-title" style="margin-top:34px;color:var(--brand-1);">Места, требующие осторожности</h2><p class="section-sub">Здесь карта указывает на повышенное напряжение в соответствующих сферах.</p>';
     AVOID_CATS.forEach(function(cat){
       var ranked=scored.map(function(c){return {c:c,s:catScore(c,cat.areas)};}).sort(function(a,b){return a.s-b.s;}).slice(0,4);
-      html+='<h3 style="font-family:var(--font-head);margin:22px 0 4px;">'+cat.title+'</h3><div class="grid-cards">';
+      html+='<h3 style="margin:22px 0 4px;">'+cat.title+'</h3><div class="grid-cards">';
       ranked.forEach(function(r,i){ html+=recCardHTML(i+1,r.c,r.s,cat.areas,true); });
       html+='</div>';
     });
