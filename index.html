@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Джйотиш Астрокартография · Карта благоприятных мест</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="mark">✦</div>
+    <div>
+      <div class="title">Джйотиш Астрокартография</div>
+      <div class="sub">Сидерический зодиак · Аянамша Лахири</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost btn-sm" id="btn-share">Поделиться</button>
+  <button class="btn btn-ghost btn-sm" id="btn-print">Печать</button>
+  <button class="btn btn-primary btn-sm" id="btn-report">Сформировать отчёт</button>
+</div>
+
+<div class="layout">
+  <!-- ЛЕВАЯ ПАНЕЛЬ -->
+  <aside class="sidebar">
+    <div class="card">
+      <h3><span class="ic">☉</span> Данные рождения</h3>
+      <div class="row2">
+        <div class="field"><label>Дата рождения</label><input type="date" id="in-date" value="1990-01-01"></div>
+        <div class="field"><label>Точное время</label><input type="time" id="in-time" value="12:00"></div>
+      </div>
+      <div class="field ac-wrap">
+        <label>Место рождения</label>
+        <input type="text" id="in-place" placeholder="Начните вводить город…" autocomplete="off">
+        <div class="ac-list" id="ac-place"></div>
+        <div class="hint" id="place-coords">Координаты определятся автоматически</div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Часовой пояс (UTC)</label>
+          <select id="in-tz"></select>
+          <div class="hint">Определяется по долготе, можно изменить</div>
+        </div>
+        <div class="field"><label>Внешние планеты</label>
+          <select id="in-outer"><option value="no">Не учитывать</option><option value="yes">Уран/Нептун/Плутон</option></select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-calc" style="width:100%;margin-top:6px;">Рассчитать карту мира</button>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">⌖</span> Города для анализа</h3>
+      <div class="field ac-wrap">
+        <label>Добавить город (релокация / поездка)</label>
+        <input type="text" id="in-city" placeholder="Например: Бали, Лиссабон…" autocomplete="off">
+        <div class="ac-list" id="ac-city"></div>
+      </div>
+      <div class="chips" id="city-chips"></div>
+      <div class="hint" style="margin-top:8px;">Если города не заданы — анализируется весь мир и формируются рекомендации.</div>
+    </div>
+
+    <div class="card" id="card-filters">
+      <h3><span class="ic">⚙</span> Предпочтения (необязательно)</h3>
+      <div class="row2">
+        <div class="field"><label>Климат</label>
+          <select id="in-climate"><option value="">Любой</option></select></div>
+        <div class="field"><label>Континент</label>
+          <select id="in-continent"><option value="">Любой</option></select></div>
+      </div>
+    </div>
+
+    <div class="card" id="card-natal" style="display:none;">
+      <h3><span class="ic">✶</span> Натальная карта</h3>
+      <div id="natal-body"></div>
+    </div>
+
+    <div class="disclaimer">
+      Приложение предоставляет интерпретации традиционной ведической астрологии (Джйотиш) в образовательных и
+      ознакомительных целях. Результаты не являются гарантиями и не заменяют юридических, финансовых,
+      медицинских или иных профессиональных консультаций.
+    </div>
+  </aside>
+
+  <!-- КАРТА -->
+  <main class="main">
+    <div class="map-wrap">
+      <canvas id="map-canvas"></canvas>
+
+      <!-- приветствие -->
+      <div class="hero" id="hero">
+        <div class="mark-big">✦</div>
+        <div class="big">Найдите свои места силы на Земле</div>
+        <div class="lead">Введите данные рождения слева — приложение рассчитает сидерическую натальную карту,
+          построит планетные линии астрокартографии по всему миру и подскажет лучшие места для жизни,
+          карьеры, отношений, бизнеса, отдыха и духовной практики.</div>
+        <div class="loader" id="loader"><div class="spinner"></div><div>Рассчитываем эфемериды и линии…</div></div>
+      </div>
+
+      <!-- инструменты -->
+      <div class="map-tools" id="map-tools" style="display:none;">
+        <div class="zoom-ctl"><button id="zin">+</button><button id="zout">−</button><button id="zreset" style="font-size:14px;">⌖</button></div>
+        <button class="btn btn-ghost btn-sm" id="btn-heat">Тепловая карта</button>
+      </div>
+
+      <!-- легенда -->
+      <div class="legend" id="legend" style="display:none;">
+        <h4>Легенда</h4>
+        <div class="lg-types" id="lg-types"></div>
+        <div id="lg-rows"></div>
+      </div>
+
+      <!-- инфопанель -->
+      <div class="infopanel" id="infopanel">
+        <div class="ip-head" id="ip-head"></div>
+        <div class="ip-body" id="ip-body"></div>
+      </div>
+
+      <div class="cursor-tip" id="cursor-tip"></div>
+    </div>
+  </main>
+</div>
+
+<!-- РЕЗУЛЬТАТЫ -->
+<section class="results" id="results" style="display:none;">
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-pane="recs">Рекомендации мира</div>
+    <div class="tab" data-pane="cities">Анализ городов</div>
+    <div class="tab" data-pane="compare">Сравнение</div>
+    <div class="tab" data-pane="report">Отчёт</div>
+  </div>
+  <div class="tabpane on" id="pane-recs"></div>
+  <div class="tabpane" id="pane-cities"></div>
+  <div class="tabpane" id="pane-compare"></div>
+  <div class="tabpane" id="pane-report"></div>
+</section>
+
+<script src="data/cities.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/acg.js"></script>
+<script src="js/interp.js"></script>
+<script src="js/map.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
