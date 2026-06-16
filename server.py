@@ -6,9 +6,18 @@
 #  Если pyswisseph недоступен — эндпоинт вернёт 503, и фронтенд
 #  автоматически перейдёт на встроенный JS-движок.
 # ============================================================
-import os, json
+import os, json, ssl, urllib.request, urllib.parse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+
+GEO_UA = 'JyotishACG/1.0 (personal astrology tool; contact kreuzersvetlana@gmail.com)'
+
+# SSL-контекст с корневыми сертификатами (macOS Python.org не ставит их системно)
+try:
+    import certifi
+    SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except Exception:                       # noqa
+    SSL_CTX = ssl._create_unverified_context()
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PORT = 7899
@@ -82,6 +91,54 @@ def compute_chart(y, mo, d, ut, outer=False):
     }
 
 
+def geocode(query, lang='ru'):
+    """Поиск любого населённого пункта через OpenStreetMap / Nominatim."""
+    params = urllib.parse.urlencode({
+        'q': query, 'format': 'jsonv2', 'limit': '8',
+        'addressdetails': '1', 'accept-language': lang,
+    })
+    url = 'https://nominatim.openstreetmap.org/search?' + params
+    req = urllib.request.Request(url, headers={'User-Agent': GEO_UA})
+    with urllib.request.urlopen(req, timeout=12, context=SSL_CTX) as r:
+        data = json.loads(r.read().decode('utf-8'))
+    import re
+    prefixes = ('городской округ ', 'муниципальное образование ', 'сельское поселение ',
+                'городское поселение ', 'посёлок городского типа ', 'полярная станция ',
+                'деревня ', 'село ', 'посёлок ', 'город ')
+    def clean(s):
+        s = (s or '').strip()
+        low = s.lower()
+        for p in prefixes:
+            if low.startswith(p):
+                return s[len(p):]
+        return s
+    out = []
+    for it in data:
+        adr = it.get('address', {})
+        name = (it.get('name') or adr.get('city') or adr.get('town') or adr.get('village')
+                or adr.get('hamlet') or adr.get('municipality')
+                or it.get('display_name', '').split(',')[0])
+        name = clean(name)
+        region = adr.get('state') or adr.get('region') or adr.get('county') or ''
+        country = adr.get('country') or ''
+        try:
+            lat = float(it['lat']); lon = float(it['lon'])
+        except (KeyError, ValueError):
+            continue
+        out.append({
+            'name': name, 'region': region, 'country': country,
+            'lat': lat, 'lon': lon, 'type': it.get('type', ''),
+        })
+    # убрать дубликаты по координатам
+    seen, uniq = set(), []
+    for o in out:
+        key = (round(o['lat'], 3), round(o['lon'], 3))
+        if key in seen:
+            continue
+        seen.add(key); uniq.append(o)
+    return uniq
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
@@ -93,9 +150,20 @@ class Handler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == '/api/chart':
             return self.handle_chart(parse_qs(parsed.query))
+        if parsed.path == '/api/geocode':
+            return self.handle_geocode(parse_qs(parsed.query))
         if parsed.path == '/api/health':
             return self.send_json({'swe': SWE_OK})
         return super().do_GET()
+
+    def handle_geocode(self, q):
+        query = (q.get('q', [''])[0] or '').strip()
+        if len(query) < 2:
+            return self.send_json([])
+        try:
+            return self.send_json(geocode(query))
+        except Exception as e:  # noqa
+            return self.send_json({'error': str(e)}, 502)
 
     def handle_chart(self, q):
         if not SWE_OK:

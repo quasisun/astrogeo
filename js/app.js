@@ -27,23 +27,29 @@
   }
   function estimateTZ(lon){ return Math.round(lon/15); }
 
-  /* ---------- Автодополнение городов ---------- */
-  function setupAutocomplete(inputId, listId, onPick, allowFree){
-    var input=$(inputId), list=$(listId), sel=-1, items=[];
-    function render(q){
-      q=q.trim().toLowerCase();
-      list.innerHTML=''; sel=-1;
-      if(!q){list.classList.remove('open');return;}
-      items=window.CITIES.filter(function(c){
+  /* ---------- Автодополнение городов (локальная база + геокодер мира) ---------- */
+  function setupAutocomplete(inputId, listId, onPick){
+    var input=$(inputId), list=$(listId), sel=-1, items=[], reqId=0, timer=null, loading=false;
+    function localMatches(q){
+      return window.CITIES.filter(function(c){
         return c.name.toLowerCase().indexOf(q)>=0 || c.country.toLowerCase().indexOf(q)>=0;
-      }).slice(0,8);
-      if(!items.length){list.classList.remove('open');return;}
+      }).slice(0,6);
+    }
+    function render(){
+      list.innerHTML=''; sel=-1;
+      if(!items.length && !loading){ list.classList.remove('open'); return; }
       items.forEach(function(c,i){
         var d=document.createElement('div'); d.className='ac-item';
-        d.innerHTML='<span>'+c.name+'</span><span class="c">'+c.country+'</span>';
-        d.onclick=function(){pick(i);};
+        var right=c.remote ? ((c.region?c.region+', ':'')+(c.country||'')) : c.country;
+        d.innerHTML='<span>'+c.name+'</span><span class="c">'+right+'</span>';
+        d.onmousedown=function(e){e.preventDefault();pick(i);};
         list.appendChild(d);
       });
+      if(loading){
+        var l=document.createElement('div'); l.className='ac-item'; l.style.opacity='.6'; l.style.cursor='default';
+        l.innerHTML='<span>Ищу города по всему миру…</span>';
+        list.appendChild(l);
+      }
       list.classList.add('open');
     }
     function pick(i){
@@ -51,13 +57,42 @@
       input.value=c.name; list.classList.remove('open');
       onPick(c);
     }
-    input.addEventListener('input',function(){render(input.value);});
-    input.addEventListener('focus',function(){if(input.value)render(input.value);});
+    function search(raw){
+      var q=raw.trim();
+      if(!q){ items=[]; loading=false; render(); return; }
+      items=localMatches(q.toLowerCase());
+      loading=q.length>=2;
+      render();
+      clearTimeout(timer);
+      if(q.length<2) return;
+      var myReq=++reqId;
+      timer=setTimeout(function(){
+        fetch('/api/geocode?q='+encodeURIComponent(q))
+          .then(function(r){return r.ok?r.json():[];})
+          .then(function(arr){
+            if(myReq!==reqId) return;            // ответ устарел
+            loading=false;
+            if(Array.isArray(arr)){
+              var have={}; items.forEach(function(x){have[(x.name||'').toLowerCase()+'|'+(x.country||'')]=1;});
+              arr.forEach(function(g){
+                g.remote=true; g.continent=g.continent||'';
+                var k=(g.name||'').toLowerCase()+'|'+(g.country||'');
+                if(!have[k]){ have[k]=1; items.push(g); }
+              });
+            }
+            render();
+          })
+          .catch(function(){ loading=false; render(); });
+      },350);
+    }
+    input.addEventListener('input',function(){search(input.value);});
+    input.addEventListener('focus',function(){if(input.value)search(input.value);});
     input.addEventListener('keydown',function(e){
       var rows=list.querySelectorAll('.ac-item');
-      if(e.key==='ArrowDown'){sel=Math.min(rows.length-1,sel+1);}
+      if(e.key==='ArrowDown'){sel=Math.min(items.length-1,sel+1);}
       else if(e.key==='ArrowUp'){sel=Math.max(0,sel-1);}
-      else if(e.key==='Enter'){ if(sel>=0)pick(sel); else if(allowFree&&input.value)onPick({free:input.value}); return;}
+      else if(e.key==='Enter'){ if(sel>=0)pick(sel); else if(items.length)pick(0); return;}
+      else if(e.key==='Escape'){list.classList.remove('open');return;}
       else return;
       rows.forEach(function(r,i){r.classList.toggle('sel',i===sel);});
       e.preventDefault();
@@ -577,17 +612,16 @@
   function init(){
     fillTZ(); fillFilters(); renderChips();
     setupAutocomplete('in-place','ac-place',function(c){
-      if(c.free){return;}
       state.place={label:c.name,lat:c.lat,lon:c.lon};
-      $('place-coords').textContent='Координаты: '+c.lat.toFixed(2)+', '+c.lon.toFixed(2)+' · '+c.country;
+      var loc=[c.region,c.country].filter(Boolean).join(', ');
+      $('place-coords').textContent='Координаты: '+c.lat.toFixed(2)+', '+c.lon.toFixed(2)+(loc?' · '+loc:'');
       $('in-tz').value=estimateTZ(c.lon);
-    },false);
+    });
     setupAutocomplete('in-city','ac-city',function(c){
-      if(c.free)return;
       if(!state.analysisCities.some(function(x){return x.name===c.name;})) state.analysisCities.push(c);
       $('in-city').value=''; renderChips();
       if(state.lines)refreshAfterCities();
-    },false);
+    });
     $('btn-calc').onclick=compute;
     setupTabs(); setupHeader();
     loadWorld().then(function(){ loadFromHash(); });
