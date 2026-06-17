@@ -57,7 +57,8 @@ a{color:var(--brand-1);text-decoration:none;}
   backdrop-filter:saturate(180%) blur(14px);
   border-bottom:1px solid var(--line);
 }
-.logo{display:flex;align-items:center;gap:12px;}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;}
+a.logo:hover .title{color:var(--brand-1);}
 .logo .mark{
   width:42px;height:42px;border-radius:13px;background:var(--grad);
   display:grid;place-items:center;color:#fff;font-size:22px;
@@ -243,6 +244,12 @@ table.rep tr:hover td{background:var(--bg-2);}
 /* подвал */
 .site-footer{border-top:1px solid var(--line);background:var(--bg-2);margin-top:10px;}
 .foot-inner{max-width:1100px;margin:0 auto;padding:22px 26px 28px;}
+.foot-cta{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  background:var(--grad);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
+.foot-cta-title{font-family:var(--font-head);font-size:20px;color:#fff;font-weight:700;}
+.foot-cta-sub{font-size:13px;color:rgba(255,255,255,.92);margin-top:3px;max-width:520px;}
+.foot-cta .btn-primary{background:#fff;color:var(--brand-1);font-weight:bold;white-space:nowrap;}
+.foot-cta .btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow);}
 .foot-disclaimer{font-size:12px;color:var(--ink-soft);line-height:1.6;margin:0 0 10px;}
 .foot-disclaimer b{color:var(--ink);}
 .foot-meta{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 12px;}

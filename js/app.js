@@ -678,6 +678,8 @@
       'ведической астрологии (Джйотиш) для образовательных и личных целей. Результаты носят ознакомительный характер, '+
       'не гарантируют наступления каких-либо событий и не заменяют юридических, финансовых, медицинских или иных '+
       'профессиональных консультаций. Все решения вы принимаете самостоятельно.</p>'+
+      '<p class="foot-cta-pdf"><b>Нужен персональный разбор?</b> Запишитесь на полную консультацию по ведической '+
+      'астрологии со Светланой Кройцер: goroskop1008.ru/uslugi</p>'+
       '<p class="foot-osm">Расчёт положений планет — астрономические алгоритмы (Swiss Ephemeris / встроенный движок). '+
       'Координаты городов — OpenStreetMap (© участники OpenStreetMap).</p>'+
       '<p class="foot-cr">© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru</p></div>';
@@ -703,6 +705,8 @@
       '.rep-foot{border-top:2px solid #df2227;margin-top:14px;padding-top:12px;}'+
       '.foot-disc{font-size:11px;color:#6b6166;line-height:1.55;margin:0 0 8px;}'+
       '.foot-disc b{color:#2a2326;}'+
+      '.foot-cta-pdf{font-size:12.5px;color:#fff;background:linear-gradient(135deg,#df2227,#ef5024);padding:12px 16px;border-radius:10px;margin:0 0 10px;}'+
+      '.foot-cta-pdf b{color:#fff;}'+
       '.foot-osm{font-size:10.5px;color:#9a9094;margin:0 0 8px;}'+
       '.foot-cr{font-size:12.5px;color:#df2227;font-weight:bold;margin:0;}';
     return '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">'+
