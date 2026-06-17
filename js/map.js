@@ -15,6 +15,8 @@
     this.selected = null;       // {lat,lon}
     this.heat = null;           // {step, grid}
     this.showHeat = false;
+    this.cityScores = [];       // [{name,lat,lon,score}] — города с оценкой
+    this.showCities = false;
     this.visPlanet = {};        // planet -> bool
     this.visType = {MC:true,IC:true,ASC:true,DSC:true};
     this.z = 1; this.panX = 0; this.panY = 0;
@@ -136,7 +138,24 @@
       this._drawLines(c);
       c.restore();
     }
+    if(this.showCities) this._drawCityScores(c);
     this._drawMarkers(c);
+  };
+
+  // цветные точки городов: зелёный — благоприятно, жёлтый — нейтрально, красный — осторожно
+  MapView.prototype._drawCityScores=function(c){
+    var self=this;
+    this.cityScores.forEach(function(ct){
+      var p=self.toScreen(ct.lon,ct.lat);
+      if(p.x<-6||p.x>self.W+6||p.y<-6||p.y>self.H+6) return;
+      var col=ct.score>=66?'#1FA84F':ct.score>=45?'#E5A300':'#df2227';
+      c.beginPath(); c.arc(p.x,p.y,4.5,0,7); c.fillStyle=col; c.fill();
+      c.strokeStyle='#fff'; c.lineWidth=1.6; c.stroke();
+      if(self.z>=3){
+        c.fillStyle='#2a2326'; c.font='10px Arial';
+        c.fillText(ct.name+' ('+ct.score+')', p.x+7, p.y+3);
+      }
+    });
   };
 
   MapView.prototype._drawWorld=function(c,s){

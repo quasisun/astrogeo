@@ -19,13 +19,52 @@
   for(var t=-12;t<=14;t++) TZ.push(t);
   function fillTZ(){
     var s=$('in-tz'); s.innerHTML='';
+    var auto=document.createElement('option'); auto.value='auto'; auto.textContent='Авто (по месту и дате)';
+    s.appendChild(auto);
     TZ.forEach(function(o){
       var op=document.createElement('option'); op.value=o;
       op.textContent='UTC'+(o>=0?'+':'')+o; s.appendChild(op);
     });
-    s.value='3';
+    s.value='auto';
   }
   function estimateTZ(lon){ return Math.round(lon/15); }
+
+  /* ---------- Часовой пояс с учётом летнего/зимнего времени и истории ---------- */
+  // смещение зоны IANA (мин, восток +) в указанный момент (Date)
+  function tzOffsetMinutes(tzid, date){
+    try{
+      var dtf=new Intl.DateTimeFormat('en-US',{timeZone:tzid,hour12:false,
+        year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      var m={}; dtf.formatToParts(date).forEach(function(p){m[p.type]=p.value;});
+      var hh=(m.hour==='24')?0:+m.hour;
+      var asUTC=Date.UTC(+m.year, m.month-1, +m.day, hh, +m.minute, +m.second);
+      return Math.round((asUTC-date.getTime())/60000);
+    }catch(e){ return null; }
+  }
+  // местное «настенное» время -> UTC (учитывает переход DST на дату рождения)
+  function localToUTC(tzid, y,mo,d,h,mi){
+    var guess=Date.UTC(y,mo-1,d,h,mi,0);
+    var off=tzOffsetMinutes(tzid, new Date(guess));
+    if(off===null) return null;
+    var utc=guess-off*60000;
+    off=tzOffsetMinutes(tzid, new Date(utc));      // уточнение у границы перехода
+    utc=guess-off*60000;
+    return {utcMs:utc, offsetMin:off};
+  }
+  function fmtOffset(min){
+    var sign=min<0?'-':'+', a=Math.abs(min), h=Math.floor(a/60), m=a%60;
+    return 'UTC'+sign+h+(m?(':'+(m<10?'0':'')+m):'');
+  }
+  // обновить подсказку «определённая зона/смещение» по текущему месту и дате
+  function updateTzInfo(){
+    var info=$('tz-info');
+    if($('in-tz').value!=='auto'){ info.textContent='Выбран вручную: '+fmtOffset(parseFloat($('in-tz').value)*60); return; }
+    if(!state.tzid || !state.place){ info.textContent='Определяется автоматически по месту и дате'; return; }
+    var dp=($('in-date').value||'1990-01-01').split('-'), tp=($('in-time').value||'12:00').split(':');
+    var r=localToUTC(state.tzid, +dp[0],+dp[1],+dp[2], +tp[0],+tp[1]);
+    if(!r){ info.textContent='Зона: '+state.tzid; return; }
+    info.textContent='Зона: '+state.tzid+' · '+fmtOffset(r.offsetMin);
+  }
 
   /* ---------- Геокодер: бэкенд (server.py) или напрямую OpenStreetMap ----------
      На GitHub Pages / в Tilda бэкенда нет — тогда обращаемся к Nominatim из браузера. */
@@ -165,20 +204,34 @@
     if(!state.place){ alert('Укажите место рождения (выберите город из списка).'); return; }
     var date=$('in-date').value, time=$('in-time').value||'12:00';
     if(!date){alert('Укажите дату рождения.');return;}
-    var tz=parseFloat($('in-tz').value);
+    var tzSel=$('in-tz').value;
     var outer=$('in-outer').value==='yes';
     var dp=date.split('-'), tp=time.split(':');
     var y=+dp[0],mo=+dp[1],d=+dp[2],hh=+tp[0],mm=+tp[1];
     var hourLocal=hh+mm/60;
-    var hourUTC=hourLocal-tz;           // местное -> UTC
-    var jd=Astro.julianDay(y,mo,d,hourUTC);
+    var tzOffH, jd, hourUTC, y2=y,mo2=mo,d2=d;
+    if(tzSel==='auto' && state.tzid){
+      var r=localToUTC(state.tzid, y,mo,d,hh,mm);   // учитывает DST/историю
+      if(r){
+        var du=new Date(r.utcMs);
+        y2=du.getUTCFullYear(); mo2=du.getUTCMonth()+1; d2=du.getUTCDate();
+        hourUTC=du.getUTCHours()+du.getUTCMinutes()/60+du.getUTCSeconds()/3600;
+        tzOffH=r.offsetMin/60;
+        jd=Astro.julianDay(y2,mo2,d2,hourUTC);
+      }
+    }
+    if(jd===undefined){                              // ручной выбор или нет зоны
+      tzOffH=(tzSel==='auto')?estimateTZ(state.place.lon):parseFloat(tzSel);
+      hourUTC=hourLocal-tzOffH;
+      jd=Astro.julianDay(y,mo,d,hourUTC);
+    }
 
     $('hero').querySelector('.big').style.display='none';
     $('hero').querySelector('.lead').style.display='none';
     $('hero').querySelector('.mark-big').style.display='none';
     $('loader').classList.add('on');
 
-    fetchChart(y,mo,d,hourUTC,outer).then(function(res){
+    fetchChart(y2,mo2,d2,hourUTC,outer).then(function(res){
       var bodies, engine;
       if(res){ bodies=apiToBodies(res); engine=res.engine; }
       else { bodies=Astro.computeBodies(jd,outer); engine='Встроенный движок (приближённый)'; }
@@ -187,7 +240,7 @@
       });
       var lines=ACG.buildLines(bodies,order);
       state.bodies=bodies; state.lines=lines; state.order=order; state.engine=engine;
-      state.chart={jd:jd,date:date,time:time,tz:tz,outer:outer};
+      state.chart={jd:jd,date:date,time:time,tz:tzOffH,tzLabel:fmtOffset(Math.round(tzOffH*60)),tzid:state.tzid,outer:outer};
 
       buildHeat();
       initMap();
@@ -259,6 +312,12 @@
       state.map.showHeat=!state.map.showHeat;
       this.classList.toggle('btn-primary',state.map.showHeat);
       this.classList.toggle('btn-ghost',!state.map.showHeat);
+      state.map.draw();
+    };
+    $('btn-cities').onclick=function(){
+      state.map.showCities=!state.map.showCities;
+      this.classList.toggle('btn-primary',state.map.showCities);
+      this.classList.toggle('btn-ghost',!state.map.showCities);
       state.map.draw();
     };
   }
@@ -479,6 +538,11 @@
 
   function renderResults(){
     var scored=allScored();
+    // точки городов на карте (зелёный/жёлтый/красный по общему баллу)
+    if(state.map){
+      state.map.cityScores=scored.map(function(c){return {name:c.name,lat:c.lat,lon:c.lon,score:c.score};});
+      state.map.draw();
+    }
     renderRecs(scored);
     renderCities(scored);
     renderCompare(scored);
@@ -567,7 +631,7 @@
     var best=scored.slice().sort(function(a,b){return b.score-a.score;});
     var top=best.slice(0,5), worst=best.slice(-3).reverse();
     var html='<h2 class="section-title">Персональный отчёт астрокартографии</h2>';
-    html+='<p class="section-sub">Дата рождения: '+ch.date+' '+ch.time+' (UTC'+(ch.tz>=0?'+':'')+ch.tz+') · '+state.place.label+' · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</p>';
+    html+='<p class="section-sub">Дата рождения: '+ch.date+' '+ch.time+' ('+(ch.tzLabel||'')+') · '+state.place.label+' · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</p>';
 
     html+='<div class="card"><h3>Сводка натальной карты</h3><div class="ex" style="font-size:13.5px;color:var(--ink)">';
     html+='Ключевые планетные позиции в сидерическом зодиаке: ';
@@ -622,14 +686,23 @@
      Собираем чистый документ отчёта в скрытом iframe и вызываем печать —
      пользователь выбирает «Сохранить как PDF». Работает офлайн и в Tilda. */
 
-  // снимок карты в режиме «весь мир» (linewise или с тепловой картой)
+  // снимок карты «весь мир», обрезанный по широте (без пустых полярных полей)
   function worldSnapshot(withHeat){
     var mv=state.map; if(!mv) return '';
-    var save={z:mv.z,panX:mv.panX,panY:mv.panY,heat:mv.showHeat};
-    mv.showHeat=!!withHeat; mv.z=1; mv.panX=0; mv.clampPan(); mv.draw();
+    var save={z:mv.z,panX:mv.panX,panY:mv.panY,heat:mv.showHeat,cities:mv.showCities};
+    mv.showHeat=!!withHeat; mv.showCities=!!mv.showCities && false; // на снимке без точек городов
+    mv.z=1; mv.panX=0; mv.clampPan(); mv.draw();
     var url='';
-    try{ url=mv.cv.toDataURL('image/jpeg',0.92); }catch(e){ url=''; }
-    mv.z=save.z; mv.panX=save.panX; mv.panY=save.panY; mv.showHeat=save.heat; mv.clampPan(); mv.draw();
+    try{
+      var dpr=window.devicePixelRatio||1;
+      var yTop=Math.max(0, mv.toScreen(0,84).y);
+      var yBot=Math.min(mv.H, mv.toScreen(0,-58).y);
+      var sw=Math.round(mv.W*dpr), sh=Math.round((yBot-yTop)*dpr);
+      var tmp=document.createElement('canvas'); tmp.width=sw; tmp.height=sh;
+      tmp.getContext('2d').drawImage(mv.cv, 0, Math.round(yTop*dpr), sw, sh, 0, 0, sw, sh);
+      url=tmp.toDataURL('image/jpeg',0.9);
+    }catch(e){ try{ url=mv.cv.toDataURL('image/jpeg',0.9); }catch(e2){ url=''; } }
+    mv.z=save.z; mv.panX=save.panX; mv.panY=save.panY; mv.showHeat=save.heat; mv.showCities=save.cities; mv.clampPan(); mv.draw();
     return url;
   }
 
@@ -654,15 +727,16 @@
 
     var head='<div class="rep-head"><div class="rep-title">Джйотиш Астрокартография</div>'+
       '<div class="rep-sub">Персональный отчёт · сидерический зодиак · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</div>'+
-      '<div class="rep-birth"><b>'+state.place.label+'</b> · '+ch.date+' '+ch.time+' (UTC'+(ch.tz>=0?'+':'')+ch.tz+')</div></div>';
+      '<div class="rep-birth"><b>'+state.place.label+'</b> · '+ch.date+' '+ch.time+' ('+(ch.tzLabel||'')+')</div></div>';
 
-    var s1='<div class="pdf-sec">'+
+    // карта + легенда держим вместе на одной странице
+    var s1='<div class="pdf-sec keep">'+
       '<h2 class="section-title">Карта астрокартографии</h2>'+
       '<p class="section-sub">Планетные линии MC / IC / ASC / DSC по всему миру.</p>'+
       (lineMap?'<img class="rep-map" src="'+lineMap+'">':'')+
-      '<h3 style="margin:14px 0 6px;">Легенда планет</h3>'+legendHTML()+'</div>';
+      '<h3 style="margin:12px 0 6px;">Легенда планет</h3>'+legendHTML()+'</div>';
 
-    var s2=heatMap?'<div class="pdf-sec pb">'+
+    var s2=heatMap?'<div class="pdf-sec pb keep">'+
       '<h2 class="section-title">Тепловая карта благоприятности</h2>'+
       '<p class="section-sub">Зелёные зоны — более благоприятные, красные — требующие осторожности.</p>'+
       '<img class="rep-map" src="'+heatMap+'"></div>':'';
@@ -671,7 +745,10 @@
     var s4='<div class="pdf-sec pb">'+$('pane-recs').innerHTML+'</div>';
     var s5='<div class="pdf-sec pb">'+$('pane-cities').innerHTML+'</div>';
     var s6='<div class="pdf-sec pb">'+$('pane-compare').innerHTML+'</div>';
-    var s7='<div class="pdf-sec pb">'+$('pane-report').innerHTML+'</div>';
+    // отчёт без дублирующего дисклеймера (он есть в подвале s8)
+    var repTmp=document.createElement('div'); repTmp.innerHTML=$('pane-report').innerHTML;
+    var dz=repTmp.querySelector('.disclaimer'); if(dz) dz.remove();
+    var s7='<div class="pdf-sec pb">'+repTmp.innerHTML+'</div>';
     var s8='<div class="pdf-sec rep-foot">'+
       '<p class="foot-disc"><b>Дисклеймер.</b> Астрокартография (астрогеография) не является прямой рекомендацией '+
       'к смене места жительства, переезду или поездке. Это информационный астрологический расчёт на основе традиционной '+
@@ -693,15 +770,19 @@
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
       '.rep-birth{font-size:13.5px;margin-top:6px;}'+
-      '.rep-map{width:100%;border:1px solid #eee;border-radius:8px;}'+
+      '.rep-map{width:100%;max-height:120mm;object-fit:contain;border:1px solid #eee;border-radius:8px;display:block;}'+
       '.pdf-sec{margin-bottom:6px;}'+
       '.pdf-sec.pb{page-break-before:always;}'+
-      '.card{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;border:1px solid #eee;}'+
+      '.pdf-sec.keep{break-inside:avoid;page-break-inside:avoid;}'+
+      '.card{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;border:1px solid #eee;margin-bottom:10px;}'+
       '.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'+
       '.rec-card{break-inside:avoid;page-break-inside:avoid;box-shadow:none!important;border:1px solid #eee;}'+
-      'table.rep{break-inside:auto;} table.rep tr{break-inside:avoid;}'+
-      'h2.section-title{break-after:avoid;font-size:20px;}'+
-      'h3{break-after:avoid;}'+
+      'table.rep{break-inside:auto;} table.rep tr{break-inside:avoid;} table.rep th{break-inside:avoid;}'+
+      'p,li,.bar,.suit,.pillrow{break-inside:avoid;page-break-inside:avoid;}'+
+      'ol,ul{break-inside:auto;}'+
+      'h2.section-title{break-after:avoid;page-break-after:avoid;font-size:20px;}'+
+      'h3,h4{break-after:avoid;page-break-after:avoid;}'+
+      'img{break-inside:avoid;}'+
       '.rep-foot{border-top:2px solid #df2227;margin-top:14px;padding-top:12px;}'+
       '.foot-disc{font-size:11px;color:#6b6166;line-height:1.55;margin:0 0 8px;}'+
       '.foot-disc b{color:#2a2326;}'+
@@ -754,7 +835,8 @@
       var p=JSON.parse(decodeURIComponent(location.hash.slice(1)));
       if(p.d)$('in-date').value=p.d; if(p.t)$('in-time').value=p.t;
       if(p.tz)$('in-tz').value=p.tz; if(p.o)$('in-outer').value=p.o;
-      if(p.pl){var a=p.pl.split('|');state.place={label:a[0],lat:+a[1],lon:+a[2]};$('in-place').value=a[0];$('place-coords').textContent='Координаты: '+(+a[1]).toFixed(2)+', '+(+a[2]).toFixed(2);}
+      if(p.pl){var a=p.pl.split('|');state.place={label:a[0],lat:+a[1],lon:+a[2]};$('in-place').value=a[0];$('place-coords').textContent='Координаты: '+(+a[1]).toFixed(2)+', '+(+a[2]).toFixed(2);
+        state.tzid=(window.tzlookup)?(function(){try{return window.tzlookup(+a[1],+a[2]);}catch(e){return null;}})():null; updateTzInfo();}
     }catch(e){}
   }
 
@@ -765,8 +847,13 @@
       state.place={label:c.name,lat:c.lat,lon:c.lon};
       var loc=[c.region,c.country].filter(Boolean).join(', ');
       $('place-coords').textContent='Координаты: '+c.lat.toFixed(2)+', '+c.lon.toFixed(2)+(loc?' · '+loc:'');
-      $('in-tz').value=estimateTZ(c.lon);
+      state.tzid=(window.tzlookup)?(function(){try{return window.tzlookup(c.lat,c.lon);}catch(e){return null;}})():null;
+      $('in-tz').value='auto';
+      updateTzInfo();
     });
+    $('in-tz').onchange=updateTzInfo;
+    $('in-date').addEventListener('change',updateTzInfo);
+    $('in-time').addEventListener('change',updateTzInfo);
     setupAutocomplete('in-city','ac-city',function(c){
       if(!state.analysisCities.some(function(x){return x.name===c.name;})) state.analysisCities.push(c);
       $('in-city').value=''; renderChips();
