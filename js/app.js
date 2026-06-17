@@ -204,6 +204,7 @@
     if(!state.place){ alert('Укажите место рождения (выберите город из списка).'); return; }
     var date=$('in-date').value, time=$('in-time').value||'12:00';
     if(!date){alert('Укажите дату рождения.');return;}
+    var name=($('in-name').value||'').trim();
     var tzSel=$('in-tz').value;
     var outer=$('in-outer').value==='yes';
     var dp=date.split('-'), tp=time.split(':');
@@ -240,7 +241,7 @@
       });
       var lines=ACG.buildLines(bodies,order);
       state.bodies=bodies; state.lines=lines; state.order=order; state.engine=engine;
-      state.chart={jd:jd,date:date,time:time,tz:tzOffH,tzLabel:fmtOffset(Math.round(tzOffH*60)),tzid:state.tzid,outer:outer};
+      state.chart={jd:jd,date:date,time:time,name:name,tz:tzOffH,tzLabel:fmtOffset(Math.round(tzOffH*60)),tzid:state.tzid,outer:outer};
 
       buildHeat();
       initMap();
@@ -630,8 +631,8 @@
     var b=state.bodies, ch=state.chart;
     var best=scored.slice().sort(function(a,b){return b.score-a.score;});
     var top=best.slice(0,5), worst=best.slice(-3).reverse();
-    var html='<h2 class="section-title">Персональный отчёт астрокартографии</h2>';
-    html+='<p class="section-sub">Дата рождения: '+ch.date+' '+ch.time+' ('+(ch.tzLabel||'')+') · '+state.place.label+' · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</p>';
+    var html='<h2 class="section-title">Персональный отчёт астрокартографии'+(ch.name?' — '+ch.name:'')+'</h2>';
+    html+='<p class="section-sub">'+(ch.name?'Расчёт для: <b>'+ch.name+'</b> · ':'')+'Дата рождения: '+ch.date+' '+ch.time+' ('+(ch.tzLabel||'')+') · '+state.place.label+' · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</p>';
 
     html+='<div class="card"><h3>Сводка натальной карты</h3><div class="ex" style="font-size:13.5px;color:var(--ink)">';
     html+='Ключевые планетные позиции в сидерическом зодиаке: ';
@@ -727,6 +728,7 @@
 
     var head='<div class="rep-head"><div class="rep-title">Джйотиш Астрокартография</div>'+
       '<div class="rep-sub">Персональный отчёт · сидерический зодиак · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</div>'+
+      (ch.name?'<div class="rep-name">Расчёт для: <b>'+ch.name+'</b></div>':'')+
       '<div class="rep-birth"><b>'+state.place.label+'</b> · '+ch.date+' '+ch.time+' ('+(ch.tzLabel||'')+')</div></div>';
 
     // карта + легенда держим вместе на одной странице
@@ -767,7 +769,8 @@
       '.rep-head{border-bottom:3px solid #df2227;padding-bottom:12px;margin-bottom:16px;}'+
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
-      '.rep-birth{font-size:13.5px;margin-top:6px;}'+
+      '.rep-name{font-size:15px;margin-top:6px;color:#df2227;}'+
+      '.rep-birth{font-size:13.5px;margin-top:4px;}'+
       '.rep-map{width:100%;max-height:120mm;object-fit:contain;border:1px solid #eee;border-radius:8px;display:block;}'+
       '.pdf-sec{margin-bottom:6px;}'+
       '.pdf-sec.pb{page-break-before:always;}'+
@@ -820,7 +823,7 @@
       $('results').scrollIntoView({behavior:'smooth'});
     };
     $('btn-share').onclick=function(){
-      var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value};
+      var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value,nm:($('in-name').value||'')};
       if(state.place)p.pl=state.place.label+'|'+state.place.lat+'|'+state.place.lon;
       var url=location.origin+location.pathname+'#'+encodeURIComponent(JSON.stringify(p));
       navigator.clipboard&&navigator.clipboard.writeText(url);
@@ -833,6 +836,7 @@
       var p=JSON.parse(decodeURIComponent(location.hash.slice(1)));
       if(p.d)$('in-date').value=p.d; if(p.t)$('in-time').value=p.t;
       if(p.tz)$('in-tz').value=p.tz; if(p.o)$('in-outer').value=p.o;
+      if(p.nm)$('in-name').value=p.nm;
       if(p.pl){var a=p.pl.split('|');state.place={label:a[0],lat:+a[1],lon:+a[2]};$('in-place').value=a[0];$('place-coords').textContent='Координаты: '+(+a[1]).toFixed(2)+', '+(+a[2]).toFixed(2);
         state.tzid=(window.tzlookup)?(function(){try{return window.tzlookup(+a[1],+a[2]);}catch(e){return null;}})():null; updateTzInfo();}
     }catch(e){}
