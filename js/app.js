@@ -604,7 +604,7 @@
       '<li>Для духовной практики и ретритов ищите линии Кету, Юпитера и Луны.</li>'+
       '<li>Чем ближе вы к линии (в пределах ~'+Math.round(ORB/3)+'–'+ORB+' км), тем сильнее её влияние.</li></ul></div>';
 
-    html+='<div class="disclaimer">Отчёт основан на традиционных принципах Джйотиш и носит ознакомительный характер.</div>';
+    html+='<div class="disclaimer">Астрокартография (астрогеография) не является прямой рекомендацией к смене места жительства или поездке — это информационный астрологический расчёт на основе традиционной ведической астрологии (Джйотиш), носящий ознакомительный характер. Решения вы принимаете самостоятельно.<br><br>© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru</div>';
     $('pane-report').innerHTML=html;
   }
 
@@ -672,6 +672,15 @@
     var s5='<div class="pdf-sec pb">'+$('pane-cities').innerHTML+'</div>';
     var s6='<div class="pdf-sec pb">'+$('pane-compare').innerHTML+'</div>';
     var s7='<div class="pdf-sec pb">'+$('pane-report').innerHTML+'</div>';
+    var s8='<div class="pdf-sec rep-foot">'+
+      '<p class="foot-disc"><b>Дисклеймер.</b> Астрокартография (астрогеография) не является прямой рекомендацией '+
+      'к смене места жительства, переезду или поездке. Это информационный астрологический расчёт на основе традиционной '+
+      'ведической астрологии (Джйотиш) для образовательных и личных целей. Результаты носят ознакомительный характер, '+
+      'не гарантируют наступления каких-либо событий и не заменяют юридических, финансовых, медицинских или иных '+
+      'профессиональных консультаций. Все решения вы принимаете самостоятельно.</p>'+
+      '<p class="foot-osm">Расчёт положений планет — астрономические алгоритмы (Swiss Ephemeris / встроенный движок). '+
+      'Координаты городов — OpenStreetMap (© участники OpenStreetMap).</p>'+
+      '<p class="foot-cr">© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru</p></div>';
 
     var css=''+
       '@page{size:A4;margin:11mm;}'+
@@ -690,12 +699,17 @@
       '.rec-card{break-inside:avoid;page-break-inside:avoid;box-shadow:none!important;border:1px solid #eee;}'+
       'table.rep{break-inside:auto;} table.rep tr{break-inside:avoid;}'+
       'h2.section-title{break-after:avoid;font-size:20px;}'+
-      'h3{break-after:avoid;}';
+      'h3{break-after:avoid;}'+
+      '.rep-foot{border-top:2px solid #df2227;margin-top:14px;padding-top:12px;}'+
+      '.foot-disc{font-size:11px;color:#6b6166;line-height:1.55;margin:0 0 8px;}'+
+      '.foot-disc b{color:#2a2326;}'+
+      '.foot-osm{font-size:10.5px;color:#9a9094;margin:0 0 8px;}'+
+      '.foot-cr{font-size:12.5px;color:#df2227;font-weight:bold;margin:0;}';
     return '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">'+
       '<title>Джйотиш Астрокартография — отчёт</title>'+
       '<link rel="stylesheet" href="'+base+'css/styles.css">'+
       '<style>'+css+'</style></head><body><div class="pdfwrap">'+
-      head+s1+s2+s3+s4+s5+s6+s7+
+      head+s1+s2+s3+s4+s5+s6+s7+s8+
       '</div><script>window.onload=function(){setTimeout(function(){window.focus();window.print();},600);};<\/script></body></html>';
   }
 
