@@ -142,13 +142,14 @@
     this._drawMarkers(c);
   };
 
-  // цветные точки городов: зелёный — благоприятно, жёлтый — нейтрально, красный — осторожно
+  // цветные точки городов: относительно вашего разброса — зелёный лучше, красный хуже
   MapView.prototype._drawCityScores=function(c){
     var self=this;
+    var lo=(this.cityLo!=null)?this.cityLo:45, hi=(this.cityHi!=null)?this.cityHi:80, rng=(hi-lo)||1;
     this.cityScores.forEach(function(ct){
       var p=self.toScreen(ct.lon,ct.lat);
       if(p.x<-6||p.x>self.W+6||p.y<-6||p.y>self.H+6) return;
-      var col=ct.score>=66?'#1FA84F':ct.score>=45?'#E5A300':'#df2227';
+      var col=heatRamp((ct.score-lo)/rng);
       c.beginPath(); c.arc(p.x,p.y,4.5,0,7); c.fillStyle=col; c.fill();
       c.strokeStyle='#fff'; c.lineWidth=1.6; c.stroke();
       if(self.z>=3){
@@ -244,10 +245,11 @@
 
   MapView.prototype._drawHeat=function(c,s,ww){
     var H=this.heat, step=H.step;
-    c.globalAlpha=0.42;
+    var lo=(H.lo!=null)?H.lo:40, hi=(H.hi!=null)?H.hi:90, rng=(hi-lo)||1;
+    c.globalAlpha=0.46;
     for(var i=0;i<H.grid.length;i++){
       var cell=H.grid[i];
-      var col=heatColor(cell.v);
+      var col=heatRamp((cell.v-lo)/rng);
       for(var rep=-1;rep<=1;rep++){
         var a=this.toScreen(cell.lon-step/2,cell.lat+step/2);
         a.x+=rep*ww;
@@ -320,12 +322,16 @@
     return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
   }
   function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
-  function heatColor(v){
-    // v 0..100 : красно-кирпичный (низко) -> жёлтый -> зелёный (высоко)
-    if(v>=50){ var t=(v-50)/50; return 'rgb('+Math.round(230-150*t)+','+Math.round(170+18*t)+','+Math.round(60+20*t)+')'; }
-    var u=v/50; return 'rgb('+Math.round(214)+','+Math.round(60+110*u)+','+Math.round(50+10*u)+')';
+  // диверг. шкала t∈[0,1]: 0 красный → 0.5 жёлтый → 1 зелёный
+  function heatRamp(t){
+    t=Math.max(0,Math.min(1,t));
+    if(t<0.5){ var u=t/0.5;
+      return 'rgb('+Math.round(214+(236-214)*u)+','+Math.round(56+(190-56)*u)+','+Math.round(50+(72-50)*u)+')';
+    }
+    var w=(t-0.5)/0.5;
+    return 'rgb('+Math.round(236-(236-40)*w)+','+Math.round(190-(190-168)*w)+','+Math.round(72+(78-72)*w)+')';
   }
 
   global.MapView = MapView;
-  global._heatColor = heatColor;
+  global._heatRamp = heatRamp;
 })(typeof window !== 'undefined' ? window : globalThis);

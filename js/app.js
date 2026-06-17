@@ -269,16 +269,23 @@
     var b = res.bodies; b._meta = res.meta; return b;
   }
 
-  /* ---------- Тепловая карта ---------- */
+  /* ---------- Тепловая карта (относительная: по разбросу баллов) ---------- */
+  function pctRange(vals){
+    var s=vals.slice().sort(function(a,b){return a-b;});
+    var lo=s[Math.floor(0.05*(s.length-1))], hi=s[Math.floor(0.95*(s.length-1))];
+    if(hi-lo<6){ var m=(hi+lo)/2; lo=m-4; hi=m+4; }   // защита от слишком узкого диапазона
+    return {lo:lo,hi:hi};
+  }
   function buildHeat(){
-    var step=3, grid=[];
+    var step=3, grid=[], vals=[];
     for(var lat=84;lat>=-84;lat-=step){
       for(var lon=-180;lon<180;lon+=step){
-        var sc=Interp.scoreLocation(state.bodies,state.lines,lat,lon,ORB);
-        grid.push({lat:lat,lon:lon,v:sc.overall});
+        var v=Interp.scoreLocation(state.bodies,state.lines,lat,lon,ORB).overall;
+        grid.push({lat:lat,lon:lon,v:v}); vals.push(v);
       }
     }
-    state.heat={step:step,grid:grid};
+    var r=pctRange(vals);
+    state.heat={step:step,grid:grid,lo:r.lo,hi:r.hi};
   }
 
   /* ---------- Карта ---------- */
@@ -313,6 +320,7 @@
       state.map.showHeat=!state.map.showHeat;
       this.classList.toggle('btn-primary',state.map.showHeat);
       this.classList.toggle('btn-ghost',!state.map.showHeat);
+      $('heat-legend').style.display=state.map.showHeat?'block':'none';
       state.map.draw();
     };
     $('btn-cities').onclick=function(){
@@ -539,9 +547,11 @@
 
   function renderResults(){
     var scored=allScored();
-    // точки городов на карте (зелёный/жёлтый/красный по общему баллу)
+    // точки городов на карте (относительно вашего разброса: зелёный лучше, красный хуже)
     if(state.map){
       state.map.cityScores=scored.map(function(c){return {name:c.name,lat:c.lat,lon:c.lon,score:c.score};});
+      var r=pctRange(scored.map(function(c){return c.score;}));
+      state.map.cityLo=r.lo; state.map.cityHi=r.hi;
       state.map.draw();
     }
     renderRecs(scored);
