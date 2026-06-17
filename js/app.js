@@ -622,47 +622,81 @@
      Собираем чистый документ отчёта в скрытом iframe и вызываем печать —
      пользователь выбирает «Сохранить как PDF». Работает офлайн и в Tilda. */
 
-  // снимок карты в режиме «весь мир» (с текущими видимыми линиями)
-  function mapSnapshot(){
+  // снимок карты в режиме «весь мир» (linewise или с тепловой картой)
+  function worldSnapshot(withHeat){
     var mv=state.map; if(!mv) return '';
     var save={z:mv.z,panX:mv.panX,panY:mv.panY,heat:mv.showHeat};
-    mv.showHeat=false; mv.z=1; mv.panX=0; mv.clampPan(); mv.draw();
+    mv.showHeat=!!withHeat; mv.z=1; mv.panX=0; mv.clampPan(); mv.draw();
     var url='';
     try{ url=mv.cv.toDataURL('image/jpeg',0.92); }catch(e){ url=''; }
     mv.z=save.z; mv.panX=save.panX; mv.panY=save.panY; mv.showHeat=save.heat; mv.clampPan(); mv.draw();
     return url;
   }
 
+  // цветная легенда планет с положениями в знаках
+  function legendHTML(){
+    var rows=state.order.map(function(p){
+      var b=state.bodies[p];
+      return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;break-inside:avoid;">'+
+        '<span style="width:24px;height:5px;border-radius:3px;background:'+ACG.COLORS[p]+';display:inline-block;flex:0 0 auto;"></span>'+
+        '<span style="color:'+ACG.COLORS[p]+';font-size:16px;width:18px;text-align:center;">'+ACG.GLYPH[p]+'</span>'+
+        '<span style="font-size:13px;">'+ACG.NAME_RU[p]+' — '+Astro.signOf(b.sidLon)+
+        ', '+Astro.nakshatraOf(b.sidLon).name+'</span></div>';
+    }).join('');
+    return '<div style="columns:2;column-gap:30px;">'+rows+'</div>';
+  }
+
   function buildReportHTML(){
     var b=state.bodies, ch=state.chart;
     var base=location.href.replace(/[?#].*$/,'').replace(/[^/]*$/,''); // каталог приложения
-    var snap=mapSnapshot();
+    var lineMap=worldSnapshot(false);
+    var heatMap=worldSnapshot(true);
+
     var head='<div class="rep-head"><div class="rep-title">Джйотиш Астрокартография</div>'+
       '<div class="rep-sub">Персональный отчёт · сидерический зодиак · аянамша Лахири '+b._meta.ayanamsha.toFixed(2)+'°</div>'+
       '<div class="rep-birth"><b>'+state.place.label+'</b> · '+ch.date+' '+ch.time+' (UTC'+(ch.tz>=0?'+':'')+ch.tz+')</div></div>';
-    var mapBlock=snap?'<h2 class="section-title">Карта астрокартографии</h2><img class="rep-map" src="'+snap+'">':'';
-    var natalBlock='<h2 class="section-title">Натальная карта</h2>'+$('natal-body').innerHTML;
-    var report=$('pane-report').innerHTML;
+
+    var s1='<div class="pdf-sec">'+
+      '<h2 class="section-title">Карта астрокартографии</h2>'+
+      '<p class="section-sub">Планетные линии MC / IC / ASC / DSC по всему миру.</p>'+
+      (lineMap?'<img class="rep-map" src="'+lineMap+'">':'')+
+      '<h3 style="margin:14px 0 6px;">Легенда планет</h3>'+legendHTML()+'</div>';
+
+    var s2=heatMap?'<div class="pdf-sec pb">'+
+      '<h2 class="section-title">Тепловая карта благоприятности</h2>'+
+      '<p class="section-sub">Зелёные зоны — более благоприятные, красные — требующие осторожности.</p>'+
+      '<img class="rep-map" src="'+heatMap+'"></div>':'';
+
+    var s3='<div class="pdf-sec pb"><h2 class="section-title">Натальная карта</h2>'+$('natal-body').innerHTML+'</div>';
+    var s4='<div class="pdf-sec pb">'+$('pane-recs').innerHTML+'</div>';
+    var s5='<div class="pdf-sec pb">'+$('pane-cities').innerHTML+'</div>';
+    var s6='<div class="pdf-sec pb">'+$('pane-compare').innerHTML+'</div>';
+    var s7='<div class="pdf-sec pb">'+$('pane-report').innerHTML+'</div>';
+
     var css=''+
-      '@page{size:A4;margin:12mm;}'+
-      '*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+      '@page{size:A4;margin:11mm;}'+
+      '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'+
       'body{margin:0;font-family:Arial,sans-serif;color:#2a2326;}'+
-      '.pdfwrap{max-width:780px;margin:0 auto;padding:6px 4px;}'+
+      '.pdfwrap{max-width:780px;margin:0 auto;padding:4px;}'+
       '.rep-head{border-bottom:3px solid #df2227;padding-bottom:12px;margin-bottom:16px;}'+
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
       '.rep-birth{font-size:13.5px;margin-top:6px;}'+
-      '.rep-map{width:100%;border:1px solid #eee;border-radius:8px;margin-bottom:18px;}'+
-      '.card{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;}'+
-      '.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'+
-      '.rec-card{break-inside:avoid;page-break-inside:avoid;}'+
-      'h2.section-title{break-after:avoid;}';
+      '.rep-map{width:100%;border:1px solid #eee;border-radius:8px;}'+
+      '.pdf-sec{margin-bottom:6px;}'+
+      '.pdf-sec.pb{page-break-before:always;}'+
+      '.card{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;border:1px solid #eee;}'+
+      '.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'+
+      '.rec-card{break-inside:avoid;page-break-inside:avoid;box-shadow:none!important;border:1px solid #eee;}'+
+      'table.rep{break-inside:auto;} table.rep tr{break-inside:avoid;}'+
+      'h2.section-title{break-after:avoid;font-size:20px;}'+
+      'h3{break-after:avoid;}';
     return '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">'+
       '<title>Джйотиш Астрокартография — отчёт</title>'+
       '<link rel="stylesheet" href="'+base+'css/styles.css">'+
       '<style>'+css+'</style></head><body><div class="pdfwrap">'+
-      head+mapBlock+natalBlock+report+
-      '</div><script>window.onload=function(){setTimeout(function(){window.focus();window.print();},500);};<\/script></body></html>';
+      head+s1+s2+s3+s4+s5+s6+s7+
+      '</div><script>window.onload=function(){setTimeout(function(){window.focus();window.print();},600);};<\/script></body></html>';
   }
 
   function generatePDF(){
