@@ -227,9 +227,7 @@
       jd=Astro.julianDay(y,mo,d,hourUTC);
     }
 
-    $('hero').querySelector('.big').style.display='none';
-    $('hero').querySelector('.lead').style.display='none';
-    $('hero').querySelector('.mark-big').style.display='none';
+    $('map-section').style.display='block';   // покажем секцию карты, чтобы был виден лоадер
     $('loader').classList.add('on');
 
     fetchChart(y2,mo2,d2,hourUTC,outer).then(function(res){
@@ -249,11 +247,11 @@
       buildLegend();
       renderResults();
 
-      $('hero').style.display='none';
       $('map-tools').style.display='flex';
       $('legend').style.display='block';
+      $('map-actions').style.display='flex';
       $('results').style.display='block';
-      $('card-natal').style.display='block';
+      $('natal-section').style.display='block';
       $('loader').classList.remove('on');
     });
   }
@@ -596,7 +594,7 @@
         state.map.panX=state.map.W/2-(lon+180)*s; state.map.panY=state.map.H/2-(90-lat)*s;
         state.map.wrapPanX();state.map.clampPan();state.map.selected={lat:lat,lon:lon};state.map.draw();
         onClickPoint({lat:lat,lon:lon});
-        document.querySelector('.main').scrollIntoView({behavior:'smooth'});
+        $('map-section').scrollIntoView({behavior:'smooth'});
       };
     });
   }
@@ -854,6 +852,7 @@
 
   /* ---------- Инициализация ---------- */
   function init(){
+    var yr=$('year'); if(yr) yr.textContent=new Date().getFullYear();
     fillTZ(); fillFilters(); renderChips();
     setupAutocomplete('in-place','ac-place',function(c){
       state.place={label:c.name,lat:c.lat,lon:c.lon};
