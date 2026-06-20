@@ -774,15 +774,15 @@
       '<p class="foot-cr">© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru</p></div>';
 
     var css=''+
-      '@page{size:A4;margin:0;}'+   /* убираем колонтитулы браузера (URL/дата/стр.) */
+      /* поля + нижний колонтитул и номера страниц (рендерит paged.js) */
+      '@page{size:A4;margin:16mm 15mm 18mm;'+
+        '@bottom-left{content:"© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru";font-family:Arial,sans-serif;font-size:8pt;color:#6b6166;}'+
+        '@bottom-right{content:"стр. " counter(page) " из " counter(pages);font-family:Arial,sans-serif;font-size:8pt;color:#6b6166;}'+
+      '}'+
       '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'+
       'html,body{margin:0;font-family:Arial,sans-serif;color:#2a2326;font-size:14.5px;}'+
       '.pdfwrap,.pdfwrap *{box-sizing:border-box;}'+
-      /* поля на КАЖДОЙ странице: thead/tfoot повторяются при печати */
-      '.pageframe{width:100%;border-collapse:collapse;}'+
-      'thead{display:table-header-group;} tfoot{display:table-footer-group;}'+
-      '.pf-space{height:15mm;}'+
-      '.pdfwrap{max-width:790px;margin:0 auto;padding:0 13mm;}'+
+      '.pdfwrap{width:100%;}'+
       '.rep-head{border-bottom:3px solid #df2227;padding-bottom:12px;margin-bottom:16px;}'+
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
@@ -790,7 +790,7 @@
       '.rep-birth{font-size:13.5px;margin-top:4px;}'+
       '.rep-map{width:100%;max-height:120mm;object-fit:contain;border:1px solid #eee;border-radius:8px;display:block;}'+
       '.pdf-sec{margin-bottom:6px;}'+
-      '.pdf-sec.pb{page-break-before:always;}'+
+      '.pdf-sec.pb{page-break-before:always;break-before:page;}'+
       '.pdf-sec.keep{break-inside:avoid;page-break-inside:avoid;}'+
       '.card{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;border:1px solid #eee;margin-bottom:10px;}'+
       /* карточки 2-в-ряд через inline-block — не разрываются между страницами (grid в печати рвёт) */
@@ -821,12 +821,14 @@
       '<title>Джйотиш Астрокартография — отчёт</title>'+
       '<link rel="stylesheet" href="'+base+'css/styles.css">'+
       '<style>'+css+'</style></head><body>'+
-      '<table class="pageframe"><thead><tr><td><div class="pf-space"></div></td></tr></thead>'+
-      '<tbody><tr><td><div class="pdfwrap">'+
-      head+s1+s2+s3+s4+s5+s6+s7+s8+
-      '</div></td></tr></tbody>'+
-      '<tfoot><tr><td><div class="pf-space"></div></td></tr></tfoot></table>'+
-      '<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},600);};<\/script></body></html>';
+      '<div class="pdfwrap">'+head+s1+s2+s3+s4+s5+s6+s7+s8+'</div>'+
+      '<script>'+
+      'window.PagedConfig={auto:true,after:function(){window.__done=1;setTimeout(function(){try{window.focus();}catch(e){}window.print();},400);}};'+
+      'function __fb(){if(window.__done)return;window.__done=1;try{window.print();}catch(e){}}'+
+      'setTimeout(__fb,10000);'+
+      '<\/script>'+
+      '<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js" onerror="__fb()"><\/script>'+
+      '</body></html>';
   }
 
   function generatePDF(){
