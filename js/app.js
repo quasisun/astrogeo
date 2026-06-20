@@ -252,7 +252,7 @@
 
       $('map-tools').style.display='flex';
       $('legend').style.display='block';
-      $('map-actions').style.display='flex';
+      $('top-actions').style.display='flex';
       $('results').style.display='block';
       $('natal-section').style.display='block';
       $('loader').classList.remove('on');
