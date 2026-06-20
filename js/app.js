@@ -180,6 +180,9 @@
     var clim={}, cont={};
     window.CITIES.forEach(function(c){clim[c.climate]=1;cont[c.continent]=1;});
     Object.keys(clim).sort().forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=k;$('in-climate').appendChild(o);});
+    // спец-опция «Только Россия» — для клиентов без переезда за границу
+    var ru=document.createElement('option'); ru.value='__ru__'; ru.textContent='Только Россия';
+    $('in-continent').appendChild(ru);
     Object.keys(cont).sort().forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=k;$('in-continent').appendChild(o);});
   }
 
@@ -495,7 +498,8 @@
     // фильтры
     var clim=$('in-climate').value, cont=$('in-continent').value;
     if(clim) pool=pool.filter(function(c){return c.climate===clim;});
-    if(cont) pool=pool.filter(function(c){return c.continent===cont;});
+    if(cont==='__ru__') pool=pool.filter(function(c){return c.country==='Россия';});
+    else if(cont) pool=pool.filter(function(c){return c.continent===cont;});
     return pool.map(scoreCity);
   }
 
