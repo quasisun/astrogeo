@@ -776,9 +776,13 @@
     var css=''+
       '@page{size:A4;margin:0;}'+   /* убираем колонтитулы браузера (URL/дата/стр.) */
       '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'+
-      'html,body{margin:0;font-family:Arial,sans-serif;color:#2a2326;}'+
+      'html,body{margin:0;font-family:Arial,sans-serif;color:#2a2326;font-size:14.5px;}'+
       '.pdfwrap,.pdfwrap *{box-sizing:border-box;}'+
-      '.pdfwrap{max-width:780px;margin:0 auto;padding:15mm 13mm;}'+
+      /* поля на КАЖДОЙ странице: thead/tfoot повторяются при печати */
+      '.pageframe{width:100%;border-collapse:collapse;}'+
+      'thead{display:table-header-group;} tfoot{display:table-footer-group;}'+
+      '.pf-space{height:15mm;}'+
+      '.pdfwrap{max-width:790px;margin:0 auto;padding:0 13mm;}'+
       '.rep-head{border-bottom:3px solid #df2227;padding-bottom:12px;margin-bottom:16px;}'+
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
@@ -803,14 +807,26 @@
       '.foot-disc b{color:#2a2326;}'+
       '.foot-cta-pdf{font-size:12.5px;color:#fff;background:linear-gradient(135deg,#df2227,#ef5024);padding:12px 16px;border-radius:10px;margin:0 0 10px;}'+
       '.foot-cta-pdf b{color:#fff;}'+
-      '.foot-osm{font-size:10.5px;color:#9a9094;margin:0 0 8px;}'+
-      '.foot-cr{font-size:12.5px;color:#df2227;font-weight:bold;margin:0;}';
+      '.foot-osm{font-size:11px;color:#9a9094;margin:0 0 8px;}'+
+      '.foot-cr{font-size:13.5px;color:#df2227;font-weight:bold;margin:0;}'+
+      /* --- крупнее для читаемости PDF --- */
+      '.pdfwrap p,.pdfwrap li{font-size:14.5px!important;line-height:1.6!important;}'+
+      '.pdfwrap li{margin-bottom:7px;}'+
+      '.section-sub{font-size:13.5px!important;}'+
+      '.rec-card .ct{font-size:18px!important;} .rec-card .ex{font-size:13.5px!important;line-height:1.55!important;} .rec-card .co{font-size:13px!important;}'+
+      'table.rep{font-size:14px!important;} table.rep th{font-size:12.5px!important;} table.rep td,table.rep th{padding:8px 10px;}'+
+      '.rep-birth{font-size:15px;} .rep-sub{font-size:13px;} .foot-disc{font-size:12.5px!important;line-height:1.6!important;}'+
+      '.legend-pdf,.lg-row,.lg-row .nm{font-size:13.5px!important;}';
     return '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">'+
       '<title>Джйотиш Астрокартография — отчёт</title>'+
       '<link rel="stylesheet" href="'+base+'css/styles.css">'+
-      '<style>'+css+'</style></head><body><div class="pdfwrap">'+
+      '<style>'+css+'</style></head><body>'+
+      '<table class="pageframe"><thead><tr><td><div class="pf-space"></div></td></tr></thead>'+
+      '<tbody><tr><td><div class="pdfwrap">'+
       head+s1+s2+s3+s4+s5+s6+s7+s8+
-      '</div><script>window.onload=function(){setTimeout(function(){window.focus();window.print();},600);};<\/script></body></html>';
+      '</div></td></tr></tbody>'+
+      '<tfoot><tr><td><div class="pf-space"></div></td></tr></tfoot></table>'+
+      '<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},600);};<\/script></body></html>';
   }
 
   function generatePDF(){
