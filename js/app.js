@@ -774,10 +774,11 @@
       '<p class="foot-cr">© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru</p></div>';
 
     var css=''+
-      '@page{size:A4;margin:11mm;}'+
+      '@page{size:A4;margin:0;}'+   /* убираем колонтитулы браузера (URL/дата/стр.) */
       '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'+
-      'body{margin:0;font-family:Arial,sans-serif;color:#2a2326;}'+
-      '.pdfwrap{max-width:780px;margin:0 auto;padding:4px;}'+
+      'html,body{margin:0;font-family:Arial,sans-serif;color:#2a2326;}'+
+      '.pdfwrap,.pdfwrap *{box-sizing:border-box;}'+
+      '.pdfwrap{max-width:780px;margin:0 auto;padding:15mm 13mm;}'+
       '.rep-head{border-bottom:3px solid #df2227;padding-bottom:12px;margin-bottom:16px;}'+
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
@@ -788,8 +789,9 @@
       '.pdf-sec.pb{page-break-before:always;}'+
       '.pdf-sec.keep{break-inside:avoid;page-break-inside:avoid;}'+
       '.card{box-shadow:none!important;break-inside:avoid;page-break-inside:avoid;border:1px solid #eee;margin-bottom:10px;}'+
-      '.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'+
-      '.rec-card{break-inside:avoid;page-break-inside:avoid;box-shadow:none!important;border:1px solid #eee;}'+
+      /* карточки 2-в-ряд через inline-block — не разрываются между страницами (grid в печати рвёт) */
+      '.grid-cards{display:block;font-size:0;}'+
+      '.rec-card{display:inline-block;width:47.5%;margin:0 1% 12px;vertical-align:top;break-inside:avoid;page-break-inside:avoid;box-shadow:none!important;border:1px solid #eee;}'+
       'table.rep{break-inside:auto;} table.rep tr{break-inside:avoid;} table.rep th{break-inside:avoid;}'+
       'p,li,.bar,.suit,.pillrow{break-inside:avoid;page-break-inside:avoid;}'+
       'ol,ul{break-inside:auto;}'+
