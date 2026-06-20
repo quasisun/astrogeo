@@ -574,17 +574,17 @@
     var html='<h2 class="section-title">Рекомендации по миру</h2><p class="section-sub">Рассчитано по '+scored.length+' городам на основе вашей сидерической карты. Нажмите на карточку, чтобы найти город на карте.</p>';
     REC_CATS.forEach(function(cat){
       var ranked=scored.map(function(c){return {c:c,s:catScore(c,cat.areas)};}).sort(function(a,b){return b.s-a.s;}).slice(0,6);
-      html+='<h3 style="margin:22px 0 4px;">'+cat.title+'</h3><p class="section-sub">'+cat.sub+'</p><div class="grid-cards">';
+      html+='<div class="rec-cat"><h3 style="margin:22px 0 4px;">'+cat.title+'</h3><p class="section-sub">'+cat.sub+'</p><div class="grid-cards">';
       ranked.forEach(function(r,i){ html+=recCardHTML(i+1,r.c,r.s,cat.areas); });
-      html+='</div>';
+      html+='</div></div>';
     });
     // избегать
     html+='<h2 class="section-title pdf-newpage" style="margin-top:34px;color:var(--brand-1);">Места, требующие осторожности</h2><p class="section-sub">Здесь карта указывает на повышенное напряжение в соответствующих сферах.</p>';
     AVOID_CATS.forEach(function(cat){
       var ranked=scored.map(function(c){return {c:c,s:catScore(c,cat.areas)};}).sort(function(a,b){return a.s-b.s;}).slice(0,4);
-      html+='<h3 style="margin:22px 0 4px;">'+cat.title+'</h3><div class="grid-cards">';
+      html+='<div class="rec-cat"><h3 style="margin:22px 0 4px;">'+cat.title+'</h3><div class="grid-cards">';
       ranked.forEach(function(r,i){ html+=recCardHTML(i+1,r.c,r.s,cat.areas,true); });
-      html+='</div>';
+      html+='</div></div>';
     });
     $('pane-recs').innerHTML=html;
     bindRecCards($('pane-recs'));
@@ -817,6 +817,7 @@
       '.pdfwrap li{margin-bottom:7px;}'+
       '.section-sub{font-size:13.5px!important;}'+
       '.pdf-newpage{break-before:page;page-break-before:always;}'+
+      '.rec-cat{break-inside:avoid;page-break-inside:avoid;}'+
       '.rec-card .ct{font-size:18px!important;} .rec-card .ex{font-size:13.5px!important;line-height:1.55!important;} .rec-card .co{font-size:13px!important;}'+
       'table.rep{font-size:14px!important;} table.rep th{font-size:12.5px!important;} table.rep td,table.rep th{padding:8px 10px;}'+
       '.rep-birth{font-size:15px;} .rep-sub{font-size:13px;} .foot-disc{font-size:12.5px!important;line-height:1.6!important;}'+
