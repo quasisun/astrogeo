@@ -579,7 +579,7 @@
       html+='</div>';
     });
     // избегать
-    html+='<h2 class="section-title" style="margin-top:34px;color:var(--brand-1);">Места, требующие осторожности</h2><p class="section-sub">Здесь карта указывает на повышенное напряжение в соответствующих сферах.</p>';
+    html+='<h2 class="section-title pdf-newpage" style="margin-top:34px;color:var(--brand-1);">Места, требующие осторожности</h2><p class="section-sub">Здесь карта указывает на повышенное напряжение в соответствующих сферах.</p>';
     AVOID_CATS.forEach(function(cat){
       var ranked=scored.map(function(c){return {c:c,s:catScore(c,cat.areas)};}).sort(function(a,b){return a.s-b.s;}).slice(0,4);
       html+='<h3 style="margin:22px 0 4px;">'+cat.title+'</h3><div class="grid-cards">';
@@ -775,14 +775,17 @@
 
     var css=''+
       /* поля + нижний колонтитул и номера страниц (рендерит paged.js) */
-      '@page{size:A4;margin:16mm 15mm 18mm;'+
-        '@bottom-left{content:"© 2026 Индийская астрология со Светланой Кройцер · goroskop1008.ru";font-family:Arial,sans-serif;font-size:8pt;color:#6b6166;}'+
-        '@bottom-right{content:"стр. " counter(page) " из " counter(pages);font-family:Arial,sans-serif;font-size:8pt;color:#6b6166;}'+
-      '}'+
+      '@page{size:A4;margin:0;}'+   /* колонтитулы браузера выключены (нет github-URL) */
       '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'+
       'html,body{margin:0;font-family:Arial,sans-serif;color:#2a2326;font-size:14.5px;}'+
       '.pdfwrap,.pdfwrap *{box-sizing:border-box;}'+
-      '.pdfwrap{width:100%;}'+
+      /* поля + повторяющийся нижний колонтитул на каждой странице (thead/tfoot) */
+      '.pageframe{width:100%;border-collapse:collapse;}'+
+      'thead{display:table-header-group;} tfoot{display:table-footer-group;}'+
+      '.pf-top{height:15mm;}'+
+      '.pf-foot{height:16mm;padding:0 13mm;}'+
+      '.pf-foot-inner{border-top:1px solid #e6dfd4;padding-top:5px;display:flex;justify-content:space-between;font-size:9px;color:#9a9094;}'+
+      '.pdfwrap{max-width:790px;margin:0 auto;padding:0 13mm;}'+
       '.rep-head{border-bottom:3px solid #df2227;padding-bottom:12px;margin-bottom:16px;}'+
       '.rep-title{font-family:Jaipur,Georgia,serif;font-size:26px;color:#df2227;font-weight:bold;}'+
       '.rep-sub{font-size:12.5px;color:#6b6166;margin-top:2px;}'+
@@ -813,6 +816,7 @@
       '.pdfwrap p,.pdfwrap li{font-size:14.5px!important;line-height:1.6!important;}'+
       '.pdfwrap li{margin-bottom:7px;}'+
       '.section-sub{font-size:13.5px!important;}'+
+      '.pdf-newpage{break-before:page;page-break-before:always;}'+
       '.rec-card .ct{font-size:18px!important;} .rec-card .ex{font-size:13.5px!important;line-height:1.55!important;} .rec-card .co{font-size:13px!important;}'+
       'table.rep{font-size:14px!important;} table.rep th{font-size:12.5px!important;} table.rep td,table.rep th{padding:8px 10px;}'+
       '.rep-birth{font-size:15px;} .rep-sub{font-size:13px;} .foot-disc{font-size:12.5px!important;line-height:1.6!important;}'+
@@ -821,13 +825,14 @@
       '<title>Джйотиш Астрокартография — отчёт</title>'+
       '<link rel="stylesheet" href="'+base+'css/styles.css">'+
       '<style>'+css+'</style></head><body>'+
-      '<div class="pdfwrap">'+head+s1+s2+s3+s4+s5+s6+s7+s8+'</div>'+
-      '<script>'+
-      'window.PagedConfig={auto:true,after:function(){window.__done=1;setTimeout(function(){try{window.focus();}catch(e){}window.print();},400);}};'+
-      'function __fb(){if(window.__done)return;window.__done=1;try{window.print();}catch(e){}}'+
-      'setTimeout(__fb,10000);'+
-      '<\/script>'+
-      '<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js" onerror="__fb()"><\/script>'+
+      '<table class="pageframe">'+
+      '<thead><tr><td><div class="pf-top"></div></td></tr></thead>'+
+      '<tfoot><tr><td><div class="pf-foot"><div class="pf-foot-inner">'+
+        '<span>© 2026 Индийская астрология со Светланой Кройцер</span><span>goroskop1008.ru</span>'+
+      '</div></div></td></tr></tfoot>'+
+      '<tbody><tr><td><div class="pdfwrap">'+head+s1+s2+s3+s4+s5+s6+s7+s8+'</div></td></tr></tbody>'+
+      '</table>'+
+      '<script>window.onload=function(){setTimeout(function(){try{window.focus();}catch(e){}window.print();},500);};<\/script>'+
       '</body></html>';
   }
 
