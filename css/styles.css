@@ -270,6 +270,13 @@
 .top-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;
   max-width:720px;margin:0 auto 22px;}
 .top-actions .btn-primary{min-height:48px;padding:12px 24px;font-size:var(--fs-small);}
+/* шапка результата: имя и данные человека */
+.subject-info{background:var(--c-cream);border:1px solid var(--c-line);border-radius:var(--radius);
+  padding:18px 22px;margin:0 auto 16px;max-width:720px;text-align:center;}
+.subj-name{font-family:var(--font-display);font-size:1.7rem;color:var(--c-red);line-height:1.12;}
+.subj-label{font-size:var(--fs-small);color:var(--c-ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;}
+.subj-data{font-size:var(--fs-body);color:var(--c-ink);margin-top:6px;}
+
 /* действия под расчётом */
 .res-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;}
 .res-actions .btn{min-height:50px;padding:13px 22px;}

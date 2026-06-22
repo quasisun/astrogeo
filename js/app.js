@@ -250,12 +250,15 @@
       buildLegend();
       renderResults();
 
+      renderSubject();
+      $('result-top').style.display='block';
       $('map-tools').style.display='flex';
       $('legend').style.display='block';
       $('result-actions').style.display='block';
       $('results').style.display='block';
       $('natal-section').style.display='block';
       $('loader').classList.remove('on');
+      if(state.fromShare){ state.fromShare=false; setTimeout(function(){ $('result-top').scrollIntoView({behavior:'smooth'}); }, 150); }
     });
   }
 
@@ -362,6 +365,15 @@
       };
       rows.appendChild(row);
     });
+  }
+
+  /* ---------- Шапка результата: имя и данные человека ---------- */
+  function renderSubject(){
+    var ch=state.chart, el=$('subject-info'); if(!el) return;
+    var data=ch.date+' '+ch.time+(ch.tzLabel?' ('+ch.tzLabel+')':'')+' · '+state.place.label;
+    el.innerHTML=(ch.name?'<div class="subj-name">'+ch.name+'</div>':'')+
+      '<div class="subj-label">Персональная карта астрокартографии</div>'+
+      '<div class="subj-data">'+data+'</div>';
   }
 
   /* ---------- Натальная сводка ---------- */
@@ -865,22 +877,24 @@
     setTimeout(function(){ btn.textContent=old; btn.disabled=false; }, 1800);
   }
 
-  /* ---------- Кнопки действий под расчётом ---------- */
+  function bindAll(sel,handler){ [].forEach.call(document.querySelectorAll(sel),function(b){ b.onclick=handler; }); }
+
+  /* ---------- Кнопки действий (вверху и под расчётом) ---------- */
   function setupHeader(){
-    $('btn-pdf').onclick=generatePDF;
-    $('btn-copy').onclick=function(){
+    bindAll('.act-pdf', generatePDF);
+    bindAll('.act-copy', function(){
       if(!state.place){ alert('Сначала рассчитайте карту.'); return; }
-      var url=buildShareURL();
-      if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ flashBtn($('btn-copy'),'Ссылка скопирована ✓'); }, function(){ prompt('Скопируйте ссылку:', url); }); }
+      var btn=this, url=buildShareURL();
+      if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ flashBtn(btn,'Ссылка скопирована ✓'); }, function(){ prompt('Скопируйте ссылку:', url); }); }
       else prompt('Скопируйте ссылку:', url);
-    };
-    $('btn-share').onclick=function(){
+    });
+    bindAll('.act-share', function(){
       if(!state.place){ alert('Сначала рассчитайте карту.'); return; }
-      var url=buildShareURL();
+      var btn=this, url=buildShareURL();
       if(navigator.share){ navigator.share({title:'Джйотиш Астрокартография', text:'Ваш персональный расчёт', url:url}).catch(function(){}); }
-      else if(navigator.clipboard){ navigator.clipboard.writeText(url); flashBtn($('btn-share'),'Ссылка скопирована ✓'); }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(url); flashBtn(btn,'Ссылка скопирована ✓'); }
       else prompt('Скопируйте ссылку:', url);
-    };
+    });
   }
   function loadFromHash(){
     if(!location.hash)return;
@@ -897,7 +911,8 @@
       }
       if(p.pl){var a=p.pl.split('|');state.place={label:a[0],lat:+a[1],lon:+a[2]};$('in-place').value=a[0];$('place-coords').textContent='Координаты: '+(+a[1]).toFixed(2)+', '+(+a[2]).toFixed(2);
         state.tzid=(window.tzlookup)?(function(){try{return window.tzlookup(+a[1],+a[2]);}catch(e){return null;}})():null; updateTzInfo();
-        // авто-расчёт: клиент сразу видит готовую карту по ссылке
+        // авто-расчёт: клиент сразу видит готовую карту по ссылке + прокрутка к его данным
+        state.fromShare=true;
         setTimeout(compute, 60);
       }
     }catch(e){}
