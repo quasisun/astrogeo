@@ -277,6 +277,24 @@ body.locked #lock{display:block!important;}
 body.view-only #lock{display:none!important;}
 .lock-err{color:var(--c-red);font-weight:bold;margin-top:10px;min-height:18px;}
 
+/* бесплатное превью (?preview=1) */
+body.preview #analysis-cities,
+body.preview #map-tools,
+body.preview #natal-section,
+body.preview #tabs,
+body.preview #pane-cities,
+body.preview #pane-compare,
+body.preview #pane-report,
+body.preview #result-actions,
+body.preview #result-top .res-actions{display:none!important;}
+.preview-natal{margin-bottom:18px;}
+.pv-lum{font-size:1.05rem;margin:6px 0;}
+.pv-gl{font-size:1.3rem;vertical-align:-2px;margin-right:4px;}
+.preview-cta{margin-top:28px;padding:22px;border:2px solid #df2227;border-radius:16px;
+  background:linear-gradient(135deg,rgba(223,34,39,.05),rgba(239,80,36,.06));}
+.preview-cta .pv-list{margin:10px 0 18px;padding-left:20px;}
+.preview-cta .pv-list li{margin-bottom:6px;}
+
 /* шапка результата: имя и данные человека */
 .subject-info{background:var(--c-cream);border:1px solid var(--c-line);border-radius:var(--radius);
   padding:18px 22px;margin:0 auto 16px;max-width:720px;text-align:center;}

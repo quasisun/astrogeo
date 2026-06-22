@@ -6,6 +6,9 @@
   var Astro = window.Astro, ACG = window.ACG, Interp = window.Interp;
   var $ = function(id){return document.getElementById(id);};
   var ORB = 1400; // км — орб влияния линий
+  // Режим бесплатного превью (?preview=1): открытый доступ, только Солнце+Луна, 3+3 города, CTA.
+  var PREVIEW = /[?&]preview=1/.test(location.search);
+  var PREVIEW_PLANETS = ['Sun','Moon'];
 
   var state = {
     bodies:null, lines:null, map:null, world:null,
@@ -240,9 +243,24 @@
       var order=Astro.PLANET_ORDER.filter(function(p){
         return outer || ['Uranus','Neptune','Pluto'].indexOf(p)<0;
       });
+      if(PREVIEW) order=order.filter(function(p){return PREVIEW_PLANETS.indexOf(p)>=0;}); // превью: только Солнце+Луна
       var lines=ACG.buildLines(bodies,order);
       state.bodies=bodies; state.lines=lines; state.order=order; state.engine=engine;
       state.chart={jd:jd,date:date,time:time,name:name,tz:tzOffH,tzLabel:fmtOffset(Math.round(tzOffH*60)),tzid:state.tzid,outer:outer};
+
+      if(PREVIEW){
+        state.heat=null;
+        initMap();
+        buildLegend();
+        renderSubject();
+        renderPreview();
+        $('result-top').style.display='block';
+        $('map-section').style.display='block';
+        $('legend').style.display='block';
+        $('results').style.display='block';
+        $('loader').classList.remove('on');
+        return;
+      }
 
       buildHeat();
       initMap();
@@ -313,10 +331,12 @@
     state.map.panX=state.map.W/2-(state.place.lon+180)*s;
     state.map.panY=state.map.H/2-(90-state.place.lat)*s;
     state.map.wrapPanX(); state.map.clampPan();
-    // города на карте по умолчанию (справочник подгружается лениво один раз)
-    state.map.showCities=true;
-    var _bc=$('btn-cities'); if(_bc){ _bc.classList.add('btn-primary'); _bc.classList.remove('btn-ghost'); }
-    ensureRefCities(function(){ state.map.refCities=window.ACG_CITIES_REF||[]; state.map.draw(); });
+    if(!PREVIEW){
+      // города на карте по умолчанию (справочник подгружается лениво один раз)
+      state.map.showCities=true;
+      var _bc=$('btn-cities'); if(_bc){ _bc.classList.add('btn-primary'); _bc.classList.remove('btn-ghost'); }
+      ensureRefCities(function(){ state.map.refCities=window.ACG_CITIES_REF||[]; state.map.draw(); });
+    }
     state.map.draw();
   }
 
@@ -592,6 +612,74 @@
     renderCities(scored);
     renderCompare(scored);
     renderReport(scored);
+  }
+
+  /* ---------- Бесплатное превью (только Солнце+Луна, 3+3 города, CTA) ---------- */
+  function buildPayload(){
+    var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value,
+      nm:($('in-name').value||''),cl:$('in-climate').value,co:$('in-continent').value};
+    if(state.place) p.pl=state.place.label+'|'+state.place.lat+'|'+state.place.lon;
+    return p;
+  }
+  function previewNatalHTML(){
+    function row(p){
+      var b=state.bodies[p]; if(!b) return '';
+      var sign=Astro.signOf(b.sidLon), nak=Astro.nakshatraOf(b.sidLon);
+      return '<div class="pv-lum"><span class="pv-gl" style="color:'+ACG.COLORS[p]+'">'+ACG.GLYPH[p]+'</span> <b>'+
+        ACG.NAME_RU[p]+'</b> — '+sign+', накшатра '+nak.name+'</div>';
+    }
+    return '<div class="preview-natal"><h2 class="section-title">Ваши светила</h2>'+row('Sun')+row('Moon')+
+      '<p class="section-sub">В полном отчёте — все 9 планет и их линии.</p></div>';
+  }
+  function previewCTAHTML(){
+    return '<div class="preview-cta">'+
+      '<h2 class="section-title" style="margin-top:0;">Это сокращённое превью</h2>'+
+      '<p>Показаны только линии Солнца и Луны и по три города. В полном отчёте:</p>'+
+      '<ul class="pv-list">'+
+        '<li>все 9 планет (Солнце, Луна, Марс, Меркурий, Юпитер, Венера, Сатурн, Раху, Кету);</li>'+
+        '<li>тепловая карта благоприятности и плотные города при зуме;</li>'+
+        '<li>рекомендации по всем сферам: ПМЖ, карьера, финансы, бизнес, любовь, духовность, путешествия;</li>'+
+        '<li>полный анализ городов, фильтр «только Россия» и свои города;</li>'+
+        '<li>натальная карта целиком и скачивание PDF.</li>'+
+      '</ul>'+
+      '<button class="btn btn-primary" id="btn-getfull" style="width:100%;min-height:54px;font-size:var(--fs-body);">Получить полный отчёт</button>'+
+      '</div>';
+  }
+  function bindPreviewCTA(){
+    var b=$('btn-getfull'); if(!b) return;
+    b.onclick=function(){
+      var payload=buildPayload();
+      try{ if(window.parent && window.parent!==window) window.parent.postMessage({type:'acg-get-full',payload:payload},'*'); }catch(e){}
+      if(window.ACG_LANDING_URL){ location.href=window.ACG_LANDING_URL; }
+      else { flashBtn(b,'Данные переданы для оформления ✓'); }
+    };
+  }
+  function renderPreview(){
+    var scored=allScored();
+    var resAreas=['residence','health','family','finance'];
+    var ranked=scored.map(function(c){return {c:c,s:catScore(c,resAreas)};}).sort(function(a,b){return b.s-a.s;});
+    var best=ranked.slice(0,3);
+    var worst=ranked.slice(-3).reverse();
+    if(state.map){
+      var pins=best.concat(worst).map(function(x){return {name:x.c.name,lat:x.c.lat,lon:x.c.lon,score:x.s};});
+      state.map.showCities=true; state.map.refCities=[];
+      state.map.cityScores=pins;
+      var rr=pctRange(pins.map(function(p){return p.score;}));
+      state.map.cityLo=rr.lo; state.map.cityHi=rr.hi;
+      state.map.draw();
+    }
+    var html=previewNatalHTML();
+    html+='<h2 class="section-title">3 лучших города для жизни</h2><div class="grid-cards">';
+    best.forEach(function(x,i){ html+=recCardHTML(i+1,x.c,x.s,resAreas); });
+    html+='</div>';
+    html+='<h2 class="section-title" style="color:var(--brand-1);">3 наименее благоприятных города</h2>'+
+      '<p class="section-sub">По двум светилам. Зоны повышенного напряжения (линии Марса, Сатурна, Раху/Кету) — в полном отчёте.</p><div class="grid-cards">';
+    worst.forEach(function(x,i){ html+=recCardHTML(i+1,x.c,x.s,['residence','health','family'],true); });
+    html+='</div>';
+    html+=previewCTAHTML();
+    $('pane-recs').innerHTML=html;
+    bindRecCards($('pane-recs'));
+    bindPreviewCTA();
   }
 
   function recCardHTML(rank,city,score,areas,bad){
@@ -950,6 +1038,9 @@
     return false;
   }
   function setupAccess(){
+    if(PREVIEW){ document.body.classList.add('preview');                       // бесплатное превью — открыто, без замка
+      var cb=$('btn-calc'); if(cb) cb.textContent='Рассчитать бесплатное превью';
+      return; }
     if(hasShareData()){ document.body.classList.add('view-only'); return; }   // клиент по ссылке — только результат
     if(localStorage.getItem('acg_ok')==='1') return;                          // уже разблокировано на этом устройстве
     document.body.classList.add('locked');                                    // прямой заход — код
