@@ -919,7 +919,7 @@
   }
 
   /* ---------- Доступ: просмотр по ссылке vs калькулятор за кодом ---------- */
-  var GATE_HASH='ae7656906a1e72fccd3e5e61bc0f144c6030dd772d1c6a5a716f62fb9b84560f'; // SHA-256 кода доступа (по умолч. astro1008)
+  var GATE_HASH='9aaf689fbcdfe9f64a071f9cbe28ae44193fa218e72af24456f44bed64583b4d'; // SHA-256 кода доступа (1008)
   function sha256(s){
     return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function(buf){
       return [].map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
