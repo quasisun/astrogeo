@@ -110,8 +110,8 @@
   /* ---------- Оценка локации ---------- */
   function scoreLocation(bodies, lines, lat, lon, orbKm) {
     var ACG = global.ACG;
-    var contrib = {}, weight = {}, active = [];
-    AREA_KEYS.forEach(function(k){contrib[k]=0;weight[k]=0;});
+    var contrib = {}, weight = {}, strength = {}, active = [];
+    AREA_KEYS.forEach(function(k){contrib[k]=0;weight[k]=0;strength[k]=0;});
 
     lines.forEach(function(line){
       var d = ACG.distToLine(lat, lon, line);
@@ -124,13 +124,15 @@
         if (e<=0) return;
         contrib[k] += (aff[k]||0) * e * inf;
         weight[k]  += e * inf;
+        if (inf > strength[k]) strength[k] = inf;   // сила воздействия по сфере = ближайшая/сильнейшая линия
       });
     });
 
     var areas = {};
     AREA_KEYS.forEach(function(k){
-      var raw = weight[k] > 0 ? contrib[k]/weight[k] : 0;
-      areas[k] = Math.round(clamp(50 + 50*raw, 2, 99));
+      var raw = weight[k] > 0 ? contrib[k]/weight[k] : 0;   // направление: благоприятно(+)/неблагоприятно(−)
+      // отклонение от нейтрали (50) ослабевает с удалением: на линии strength≈1, далеко → 0
+      areas[k] = Math.round(clamp(50 + 50*raw*strength[k], 2, 99));
     });
     // Общий балл — среднее с лёгким весом на ключевые сферы
     var sum=0,n=0;

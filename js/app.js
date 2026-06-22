@@ -313,6 +313,10 @@
     state.map.panX=state.map.W/2-(state.place.lon+180)*s;
     state.map.panY=state.map.H/2-(90-state.place.lat)*s;
     state.map.wrapPanX(); state.map.clampPan();
+    // города на карте по умолчанию (справочник подгружается лениво один раз)
+    state.map.showCities=true;
+    var _bc=$('btn-cities'); if(_bc){ _bc.classList.add('btn-primary'); _bc.classList.remove('btn-ghost'); }
+    ensureRefCities(function(){ state.map.refCities=window.ACG_CITIES_REF||[]; state.map.draw(); });
     state.map.draw();
   }
 
