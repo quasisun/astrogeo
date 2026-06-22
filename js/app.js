@@ -861,11 +861,14 @@
       $('results').scrollIntoView({behavior:'smooth'});
     };
     $('btn-share').onclick=function(){
-      var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value,nm:($('in-name').value||'')};
-      if(state.place)p.pl=state.place.label+'|'+state.place.lat+'|'+state.place.lon;
+      if(!state.place){ alert('Сначала укажите место рождения и рассчитайте карту.'); return; }
+      var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value,
+        nm:($('in-name').value||''), cl:$('in-climate').value, co:$('in-continent').value};
+      p.pl=state.place.label+'|'+state.place.lat+'|'+state.place.lon;
+      if(state.analysisCities.length) p.ac=state.analysisCities.map(function(c){return {n:c.name,la:c.lat,lo:c.lon,cn:c.country||'',ct:c.continent||''};});
       var url=location.origin+location.pathname+'#'+encodeURIComponent(JSON.stringify(p));
-      navigator.clipboard&&navigator.clipboard.writeText(url);
-      alert('Ссылка скопирована в буфер обмена:\n'+url);
+      if(navigator.clipboard) navigator.clipboard.writeText(url);
+      alert('Ссылка на расчёт скопирована в буфер обмена.\nОтправьте её клиенту — он откроет готовую карту и сможет скачать PDF или распечатать.\n\n'+url);
     };
   }
   function loadFromHash(){
@@ -875,8 +878,17 @@
       if(p.d)$('in-date').value=p.d; if(p.t)$('in-time').value=p.t;
       if(p.tz)$('in-tz').value=p.tz; if(p.o)$('in-outer').value=p.o;
       if(p.nm)$('in-name').value=p.nm;
+      if(p.cl!==undefined)$('in-climate').value=p.cl;
+      if(p.co!==undefined)$('in-continent').value=p.co;
+      if(p.ac&&p.ac.length){
+        state.analysisCities=p.ac.map(function(c){return {name:c.n,lat:c.la,lon:c.lo,country:c.cn||'',continent:c.ct||''};});
+        renderChips();
+      }
       if(p.pl){var a=p.pl.split('|');state.place={label:a[0],lat:+a[1],lon:+a[2]};$('in-place').value=a[0];$('place-coords').textContent='Координаты: '+(+a[1]).toFixed(2)+', '+(+a[2]).toFixed(2);
-        state.tzid=(window.tzlookup)?(function(){try{return window.tzlookup(+a[1],+a[2]);}catch(e){return null;}})():null; updateTzInfo();}
+        state.tzid=(window.tzlookup)?(function(){try{return window.tzlookup(+a[1],+a[2]);}catch(e){return null;}})():null; updateTzInfo();
+        // авто-расчёт: клиент сразу видит готовую карту по ссылке
+        setTimeout(compute, 60);
+      }
     }catch(e){}
   }
 
