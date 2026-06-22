@@ -918,8 +918,35 @@
     }catch(e){}
   }
 
+  /* ---------- Доступ: просмотр по ссылке vs калькулятор за кодом ---------- */
+  var GATE_HASH='ae7656906a1e72fccd3e5e61bc0f144c6030dd772d1c6a5a716f62fb9b84560f'; // SHA-256 кода доступа (по умолч. astro1008)
+  function sha256(s){
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function(buf){
+      return [].map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
+    });
+  }
+  function hasShareData(){
+    try{ if(location.hash){ var p=JSON.parse(decodeURIComponent(location.hash.slice(1))); return !!(p&&p.pl); } }catch(e){}
+    return false;
+  }
+  function setupAccess(){
+    if(hasShareData()){ document.body.classList.add('view-only'); return; }   // клиент по ссылке — только результат
+    if(localStorage.getItem('acg_ok')==='1') return;                          // уже разблокировано на этом устройстве
+    document.body.classList.add('locked');                                    // прямой заход — код
+    var submit=function(){
+      var code=$('lock-code').value||'';
+      sha256(code).then(function(h){
+        if(h===GATE_HASH){ try{localStorage.setItem('acg_ok','1');}catch(e){} document.body.classList.remove('locked'); }
+        else { $('lock-err').textContent='Неверный код'; $('lock-code').value=''; }
+      }).catch(function(){ $('lock-err').textContent='Ошибка проверки'; });
+    };
+    $('lock-btn').onclick=submit;
+    $('lock-code').addEventListener('keydown',function(e){ if(e.key==='Enter')submit(); });
+  }
+
   /* ---------- Инициализация ---------- */
   function init(){
+    setupAccess();
     var yr=$('year'); if(yr) yr.textContent=new Date().getFullYear();
     fillTZ(); fillFilters(); renderChips();
     setupAutocomplete('in-place','ac-place',function(c){

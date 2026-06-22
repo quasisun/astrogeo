@@ -270,6 +270,13 @@
 .top-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;
   max-width:720px;margin:0 auto 22px;}
 .top-actions .btn-primary{min-height:48px;padding:12px 24px;font-size:var(--fs-small);}
+/* режимы доступа: просмотр по ссылке (view-only) и замок (locked) */
+body.view-only .editor-only{display:none!important;}
+body.locked .editor-only{display:none!important;}
+body.locked #lock{display:block!important;}
+body.view-only #lock{display:none!important;}
+.lock-err{color:var(--c-red);font-weight:bold;margin-top:10px;min-height:18px;}
+
 /* шапка результата: имя и данные человека */
 .subject-info{background:var(--c-cream);border:1px solid var(--c-line);border-radius:var(--radius);
   padding:18px 22px;margin:0 auto 16px;max-width:720px;text-align:center;}
