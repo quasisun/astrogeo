@@ -16,6 +16,7 @@
     this.heat = null;           // {step, grid}
     this.showHeat = false;
     this.cityScores = [];       // [{name,lat,lon,score}] — города с оценкой
+    this.refCities = [];        // [name,lat,lon,popK] — плотный справочник (LOD при зуме)
     this.showCities = false;
     this.visPlanet = {};        // planet -> bool
     this.visType = {MC:true,IC:true,ASC:true,DSC:true};
@@ -138,25 +139,46 @@
       this._drawLines(c);
       c.restore();
     }
-    if(this.showCities) this._drawCityScores(c);
+    if(this.showCities) this._drawCities(c);
     this._drawMarkers(c);
   };
 
-  // цветные точки городов: относительно вашего разброса — зелёный лучше, красный хуже
-  MapView.prototype._drawCityScores=function(c){
-    var self=this;
+  // Слой городов: оценённые (цветные, приоритет) + плотный серый справочник с LOD.
+  // Чем сильнее зум — тем больше мелких городов проявляется. Антиналожение по сетке.
+  MapView.prototype._drawCities=function(c){
+    var self=this, W=this.W, H=this.H, z=this.z;
+    var cell=46;                                  // шаг сетки антиналожения (px)
+    var occ=Object.create(null);
+    function key(x,y){ return ((x/cell)|0)+'|'+((y/cell)|0); }
+
+    // 1) оценённые города (как раньше): цветные по благоприятности, занимают ячейки
     var lo=(this.cityLo!=null)?this.cityLo:45, hi=(this.cityHi!=null)?this.cityHi:80, rng=(hi-lo)||1;
-    this.cityScores.forEach(function(ct){
+    var labelScores=z>=2.4;
+    (this.cityScores||[]).forEach(function(ct){
       var p=self.toScreen(ct.lon,ct.lat);
-      if(p.x<-6||p.x>self.W+6||p.y<-6||p.y>self.H+6) return;
-      var col=heatRamp((ct.score-lo)/rng);
-      c.beginPath(); c.arc(p.x,p.y,4.5,0,7); c.fillStyle=col; c.fill();
+      if(p.x<-8||p.x>W+8||p.y<-8||p.y>H+8) return;
+      occ[key(p.x,p.y)]=1;
+      c.beginPath(); c.arc(p.x,p.y,4.5,0,7); c.fillStyle=heatRamp((ct.score-lo)/rng); c.fill();
       c.strokeStyle='#fff'; c.lineWidth=1.6; c.stroke();
-      if(self.z>=3){
-        c.fillStyle='#2a2326'; c.font='10px Arial';
-        c.fillText(ct.name+' ('+ct.score+')', p.x+7, p.y+3);
-      }
+      if(labelScores){ c.fillStyle='#2a2326'; c.font='bold 10px Arial'; c.fillText(ct.name+' ('+ct.score+')', p.x+7, p.y+3); }
     });
+
+    // 2) справочные города (серые): крупнейшие сначала; число рассматриваемых растёт с зумом,
+    //    благодаря чему при приближении проявляются всё более мелкие города.
+    var ref=this.refCities;
+    if(ref && ref.length){
+      var K=Math.max(600, Math.min(ref.length, Math.round(260*Math.pow(z,1.9))));
+      var labelRefs=z>=2.0;
+      c.font='11px Arial';
+      for(var i=0;i<K;i++){
+        var r=ref[i];                             // [name, lat, lon, popK]
+        var p=self.toScreen(r[2], r[1]);
+        if(p.x<-8||p.x>W+8||p.y<-8||p.y>H+8) continue;
+        var kk=key(p.x,p.y); if(occ[kk]) continue; occ[kk]=1;
+        c.beginPath(); c.arc(p.x,p.y,2.3,0,7); c.fillStyle='#7b8794'; c.fill();
+        if(labelRefs){ c.fillStyle='#54606b'; c.fillText(r[0], p.x+5, p.y+3); }
+      }
+    }
   };
 
   MapView.prototype._drawWorld=function(c,s){

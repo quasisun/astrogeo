@@ -331,8 +331,24 @@
       state.map.showCities=!state.map.showCities;
       this.classList.toggle('btn-primary',state.map.showCities);
       this.classList.toggle('btn-ghost',!state.map.showCities);
+      if(state.map.showCities){
+        ensureRefCities(function(){ state.map.refCities=window.ACG_CITIES_REF||[]; state.map.draw(); });
+      }
       state.map.draw();
     };
+  }
+
+  // Ленивая загрузка плотного справочника городов (~1 МБ) — только при первом включении слоя.
+  var _refLoading=false;
+  function ensureRefCities(cb){
+    if(window.ACG_CITIES_REF){ cb&&cb(); return; }
+    if(_refLoading) return;
+    _refLoading=true;
+    var s=document.createElement('script');
+    s.src='data/cities-ref.js?v=39';
+    s.onload=function(){ _refLoading=false; cb&&cb(); };
+    s.onerror=function(){ _refLoading=false; };
+    document.head.appendChild(s);
   }
 
   function refreshAfterCities(){
