@@ -252,7 +252,7 @@
 
       $('map-tools').style.display='flex';
       $('legend').style.display='block';
-      $('top-actions').style.display='flex';
+      $('result-actions').style.display='block';
       $('results').style.display='block';
       $('natal-section').style.display='block';
       $('loader').classList.remove('on');
@@ -852,23 +852,34 @@
     setTimeout(function(){ try{ifr.remove();}catch(e){} }, 120000);
   }
 
-  /* ---------- Кнопки шапки ---------- */
+  // Собрать ссылку на текущий расчёт (данные + фильтры + города в hash)
+  function buildShareURL(){
+    var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value,
+      nm:($('in-name').value||''), cl:$('in-climate').value, co:$('in-continent').value};
+    p.pl=state.place.label+'|'+state.place.lat+'|'+state.place.lon;
+    if(state.analysisCities.length) p.ac=state.analysisCities.map(function(c){return {n:c.name,la:c.lat,lo:c.lon,cn:c.country||'',ct:c.continent||''};});
+    return location.origin+location.pathname+'#'+encodeURIComponent(JSON.stringify(p));
+  }
+  function flashBtn(btn,text){
+    var old=btn.textContent; btn.textContent=text; btn.disabled=true;
+    setTimeout(function(){ btn.textContent=old; btn.disabled=false; }, 1800);
+  }
+
+  /* ---------- Кнопки действий под расчётом ---------- */
   function setupHeader(){
     $('btn-pdf').onclick=generatePDF;
-    $('btn-report').onclick=function(){
-      if(!state.bodies){alert('Сначала рассчитайте карту.');return;}
-      document.querySelector('[data-pane="report"]').click();
-      $('results').scrollIntoView({behavior:'smooth'});
+    $('btn-copy').onclick=function(){
+      if(!state.place){ alert('Сначала рассчитайте карту.'); return; }
+      var url=buildShareURL();
+      if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ flashBtn($('btn-copy'),'Ссылка скопирована ✓'); }, function(){ prompt('Скопируйте ссылку:', url); }); }
+      else prompt('Скопируйте ссылку:', url);
     };
     $('btn-share').onclick=function(){
-      if(!state.place){ alert('Сначала укажите место рождения и рассчитайте карту.'); return; }
-      var p={d:$('in-date').value,t:$('in-time').value,tz:$('in-tz').value,o:$('in-outer').value,
-        nm:($('in-name').value||''), cl:$('in-climate').value, co:$('in-continent').value};
-      p.pl=state.place.label+'|'+state.place.lat+'|'+state.place.lon;
-      if(state.analysisCities.length) p.ac=state.analysisCities.map(function(c){return {n:c.name,la:c.lat,lo:c.lon,cn:c.country||'',ct:c.continent||''};});
-      var url=location.origin+location.pathname+'#'+encodeURIComponent(JSON.stringify(p));
-      if(navigator.clipboard) navigator.clipboard.writeText(url);
-      alert('Ссылка на расчёт скопирована в буфер обмена.\nОтправьте её клиенту — он откроет готовую карту и сможет скачать PDF или распечатать.\n\n'+url);
+      if(!state.place){ alert('Сначала рассчитайте карту.'); return; }
+      var url=buildShareURL();
+      if(navigator.share){ navigator.share({title:'Джйотиш Астрокартография', text:'Ваш персональный расчёт', url:url}).catch(function(){}); }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(url); flashBtn($('btn-share'),'Ссылка скопирована ✓'); }
+      else prompt('Скопируйте ссылку:', url);
     };
   }
   function loadFromHash(){

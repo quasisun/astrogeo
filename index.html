@@ -11,7 +11,7 @@
 <meta property="og:title" content="Джйотиш Астрокартография">
 <meta property="og:description" content="Карта благоприятных мест на Земле по традиционной индийской астрологии. Линии планет, анализ городов и персональные рекомендации.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23df2227'/%3E%3Cstop offset='1' stop-color='%23ef5024'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-size='62' text-anchor='middle' fill='white'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/styles.css?v=34">
+<link rel="stylesheet" href="css/styles.css?v=35">
 </head>
 <body>
 <div class="astro-app">
@@ -20,13 +20,6 @@
     <h1 class="astro-title">Джйотиш Астрокартография</h1>
     <p class="astro-subtitle">Карта благоприятных мест · сидерический зодиак, аянамша Лахири</p>
   </header>
-
-  <!-- Действия (появляются после расчёта) -->
-  <div class="top-actions" id="top-actions" style="display:none;">
-    <button class="btn btn-primary" id="btn-pdf">Скачать PDF</button>
-    <button class="btn btn-ghost btn-sm" id="btn-share">Поделиться</button>
-    <button class="btn btn-ghost btn-sm" id="btn-report">Отчёт</button>
-  </div>
 
   <section class="astro-section astro-narrow">
     <p>Введите данные рождения — приложение рассчитает сидерическую натальную карту,
@@ -60,7 +53,6 @@
           <select id="in-outer"><option value="no">Не учитывать</option><option value="yes">Уран/Нептун/Плутон</option></select>
         </div>
       </div>
-      <button class="btn btn-primary astro-btn--block" id="btn-calc" style="width:100%;">Рассчитать карту мира</button>
     </div>
   </section>
 
@@ -81,6 +73,11 @@
       </div>
       <div class="hint">Если города не заданы — анализируется весь мир и формируются рекомендации.</div>
     </div>
+  </section>
+
+  <!-- КНОПКА РАСЧЁТА (после всех настроек) -->
+  <section class="astro-section astro-narrow">
+    <button class="btn btn-primary astro-btn--block" id="btn-calc" style="width:100%;min-height:56px;font-size:var(--fs-body);">Рассчитать карту мира</button>
   </section>
 
   <!-- КАРТА (во всю ширину) -->
@@ -138,6 +135,16 @@
     <div class="tabpane" id="pane-report"></div>
   </section>
 
+  <!-- ДЕЙСТВИЯ ПОД РАСЧЁТОМ -->
+  <section class="astro-section astro-narrow" id="result-actions" style="display:none;">
+    <div class="res-actions">
+      <button class="btn btn-primary" id="btn-pdf">Сохранить PDF / печать</button>
+      <button class="btn btn-ghost" id="btn-copy">Скопировать ссылку</button>
+      <button class="btn btn-ghost" id="btn-share">Поделиться</button>
+    </div>
+    <div class="hint" style="text-align:center;margin-top:10px;">Ссылку можно отправить клиенту — он откроет готовый расчёт и сам скачает PDF или распечатает.</div>
+  </section>
+
   <!-- ПОДВАЛ -->
   <footer class="astro-footer">
     <div class="foot-cta">
@@ -165,12 +172,12 @@
 
 </div>
 
-<script src="js/tz.js?v=34"></script>
-<script src="data/cities.js?v=34"></script>
-<script src="js/astro.js?v=34"></script>
-<script src="js/acg.js?v=34"></script>
-<script src="js/interp.js?v=34"></script>
-<script src="js/map.js?v=34"></script>
-<script src="js/app.js?v=34"></script>
+<script src="js/tz.js?v=35"></script>
+<script src="data/cities.js?v=35"></script>
+<script src="js/astro.js?v=35"></script>
+<script src="js/acg.js?v=35"></script>
+<script src="js/interp.js?v=35"></script>
+<script src="js/map.js?v=35"></script>
+<script src="js/app.js?v=35"></script>
 </body>
 </html>
