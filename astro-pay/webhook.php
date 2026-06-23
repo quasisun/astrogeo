@@ -42,6 +42,9 @@ $time  = trim($data[$cfg['field_time']]  ?? '');
 $city  = trim($data[$cfg['field_city']]  ?? '');
 $email = trim($data[$cfg['field_email']] ?? '');
 
+// 4.1) Это наша астро-форма? У других форм сайта нет полей даты/города — их игнорируем.
+if ($date === '' || $city === '') { echo 'OK (not this form)'; exit; }
+
 // 5) Только оплаченные заказы (иначе письмо не шлём).
 if (!empty($cfg['require_payment']) && !acg_is_paid($data)) { echo 'OK (no payment yet)'; exit; }
 
