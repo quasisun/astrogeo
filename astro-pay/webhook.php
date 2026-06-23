@@ -12,7 +12,12 @@ if (!is_file($cfgFile)) { http_response_code(500); echo 'no config'; exit; }
 $cfg = require $cfgFile;
 require __DIR__ . '/lib.php';
 
-$logFile = __DIR__ . '/log.txt';
+// Лог в .php-файл с заглушкой: из браузера он ничего не отдаёт (защита данных клиентов),
+// а вы читаете его через файловый менеджер.
+$logFile = __DIR__ . '/log.php';
+if (!is_file($logFile)) {
+    @file_put_contents($logFile, "<?php exit; /* astro-pay log — не открывается из браузера */ ?>\n");
+}
 
 // 1) Логируем всё, что пришло (для отладки на тесте).
 $raw = file_get_contents('php://input');
