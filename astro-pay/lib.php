@@ -61,8 +61,10 @@ function acg_region_to_co($region) {
     return (strpos($r, 'росс') !== false || strpos($r, 'russ') !== false) ? '__ru__' : '';
 }
 
-/** Признак оплаченного заказа в данных от Tilda. На тесте уточним по логу. */
+/** Признак оплаченного заказа в данных от Tilda (ключи ожидаются в нижнем регистре).
+ *  Tilda при оплате присылает tranid (id транзакции платёжной системы). */
 function acg_is_paid($data) {
+    if (!empty($data['tranid'])) return true;
     if (!empty($data['payment'])) {
         $p = $data['payment'];
         if (is_array($p)) return !empty($p['amount']) || !empty($p['systranid']) || !empty($p['orderid']);

@@ -36,18 +36,22 @@ if (($_GET['key'] ?? '') !== $cfg['secret']) { http_response_code(403); echo 'fo
 $data = $_POST;
 if (!$data && $raw) { $j = json_decode($raw, true); if (is_array($j)) $data = $j; }
 
-$name   = trim($data[$cfg['field_name']]  ?? '');
-$date   = trim($data[$cfg['field_date']]  ?? '');
-$time   = trim($data[$cfg['field_time']]  ?? '');
-$city   = trim($data[$cfg['field_city']]  ?? '');
-$email  = trim($data[$cfg['field_email']] ?? '');
-$region = trim($data[$cfg['field_region'] ?? 'region'] ?? '');   // «Весь мир» / «Только по России»
+// Регистронезависимо: Tilda шлёт стандартные поля Name/Email с большой буквы.
+$L = array_change_key_case($data, CASE_LOWER);
+$g = function ($key) use ($L) { return trim($L[strtolower($key)] ?? ''); };
+
+$name   = $g($cfg['field_name']);
+$date   = $g($cfg['field_date']);
+$time   = $g($cfg['field_time']);
+$city   = $g($cfg['field_city']);
+$email  = $g($cfg['field_email']);
+$region = $g($cfg['field_region'] ?? 'region');   // «Весь мир» / «Только по России»
 
 // 4.1) Это наша астро-форма? У других форм сайта нет полей даты/города — их игнорируем.
 if ($date === '' || $city === '') { echo 'OK (not this form)'; exit; }
 
 // 5) Только оплаченные заказы (иначе письмо не шлём).
-if (!empty($cfg['require_payment']) && !acg_is_paid($data)) { echo 'OK (no payment yet)'; exit; }
+if (!empty($cfg['require_payment']) && !acg_is_paid($L)) { echo 'OK (no payment yet)'; exit; }
 
 // 6) Нормализуем дату/время.
 $d = acg_normalize_date($date);
