@@ -36,11 +36,12 @@ if (($_GET['key'] ?? '') !== $cfg['secret']) { http_response_code(403); echo 'fo
 $data = $_POST;
 if (!$data && $raw) { $j = json_decode($raw, true); if (is_array($j)) $data = $j; }
 
-$name  = trim($data[$cfg['field_name']]  ?? '');
-$date  = trim($data[$cfg['field_date']]  ?? '');
-$time  = trim($data[$cfg['field_time']]  ?? '');
-$city  = trim($data[$cfg['field_city']]  ?? '');
-$email = trim($data[$cfg['field_email']] ?? '');
+$name   = trim($data[$cfg['field_name']]  ?? '');
+$date   = trim($data[$cfg['field_date']]  ?? '');
+$time   = trim($data[$cfg['field_time']]  ?? '');
+$city   = trim($data[$cfg['field_city']]  ?? '');
+$email  = trim($data[$cfg['field_email']] ?? '');
+$region = trim($data[$cfg['field_region'] ?? 'region'] ?? '');   // «Весь мир» / «Только по России»
 
 // 4.1) Это наша астро-форма? У других форм сайта нет полей даты/города — их игнорируем.
 if ($date === '' || $city === '') { echo 'OK (not this form)'; exit; }
@@ -66,8 +67,9 @@ if ($lat === null) {
     exit;
 }
 
-// 8) Собираем ссылку и шлём письмо клиенту.
-$link    = acg_build_link($cfg['app_base'], $name, $d, $t, $label, $lat, $lon);
+// 8) Собираем ссылку (с учётом региона) и шлём письмо клиенту.
+$co      = acg_region_to_co($region);
+$link    = acg_build_link($cfg['app_base'], $name, $d, $t, $label, $lat, $lon, $co);
 $subject = 'Ваш полный отчёт по астрокартографии';
 $body    = acg_email_html($name, $link, $d, $t, $label);
 

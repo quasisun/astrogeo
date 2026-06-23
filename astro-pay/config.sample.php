@@ -27,4 +27,5 @@ return [
     'field_time'      => 'btime',
     'field_city'      => 'bcity',
     'field_email'     => 'email',
+    'field_region'    => 'region',   // поле «Весь мир / Только по России» (если нет — по умолчанию весь мир)
 ];

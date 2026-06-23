@@ -43,15 +43,22 @@ function acg_geocode($city) {
     return [round((float)$arr[0]['lat'], 4), round((float)$arr[0]['lon'], 4), $city];
 }
 
-/** Собрать ссылку на полный отчёт в формате, который понимает приложение (#<urlencoded JSON>). */
-function acg_build_link($appBase, $name, $d, $t, $label, $lat, $lon) {
+/** Собрать ссылку на полный отчёт в формате, который понимает приложение (#<urlencoded JSON>).
+ *  $co — фильтр региона: '' (весь мир) или '__ru__' (только Россия). */
+function acg_build_link($appBase, $name, $d, $t, $label, $lat, $lon, $co = '') {
     $payload = [
         'd'  => $d, 't' => $t, 'tz' => 'auto', 'o' => 'no',
-        'nm' => $name, 'cl' => '', 'co' => '',
+        'nm' => $name, 'cl' => '', 'co' => $co,
         'pl' => $label . '|' . $lat . '|' . $lon,
     ];
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
     return rtrim($appBase, '/') . '/#' . rawurlencode($json);
+}
+
+/** Преобразовать выбор «регион» из формы в фильтр приложения. */
+function acg_region_to_co($region) {
+    $r = function_exists('mb_strtolower') ? mb_strtolower($region, 'UTF-8') : strtolower($region);
+    return (strpos($r, 'росс') !== false || strpos($r, 'russ') !== false) ? '__ru__' : '';
 }
 
 /** Признак оплаченного заказа в данных от Tilda. На тесте уточним по логу. */
