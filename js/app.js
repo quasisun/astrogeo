@@ -645,13 +645,15 @@
       '<button class="btn btn-primary" id="btn-getfull" style="width:100%;min-height:54px;font-size:var(--fs-body);">Получить полный отчёт</button>'+
       '</div>';
   }
+  // Кнопка ведёт на товар в общей корзине (оплата полного расчёта). Данные рождения
+  // человек укажет в комментарии к заказу — портал разберёт их после оплаты.
+  var FULL_URL = 'https://goroskop1008.ru/uslugi/#goroskop#!/tproduct/769363362-1781659868190';
   function bindPreviewCTA(){
     var b=$('btn-getfull'); if(!b) return;
+    var url = window.ACG_LANDING_URL || FULL_URL;
     b.onclick=function(){
-      var payload=buildPayload();
-      try{ if(window.parent && window.parent!==window) window.parent.postMessage({type:'acg-get-full',payload:payload},'*'); }catch(e){}
-      if(window.ACG_LANDING_URL){ location.href=window.ACG_LANDING_URL; }
-      else { flashBtn(b,'Данные переданы для оформления ✓'); }
+      try{ window.top.location.href = url; }      // если в iframe Tilda — уводим всю страницу
+      catch(e){ window.open(url, '_blank'); }       // если запрещено — открываем в новой вкладке
     };
   }
   function renderPreview(){
