@@ -1041,7 +1041,7 @@
   }
   function setupAccess(){
     if(PREVIEW){ document.body.classList.add('preview');                       // бесплатное превью — открыто, без замка
-      var cb=$('btn-calc'); if(cb) cb.textContent='Рассчитать бесплатное превью';
+      var cb=$('btn-calc'); if(cb) cb.textContent='Рассчитать';
       return; }
     if(hasShareData()){ document.body.classList.add('view-only'); return; }   // клиент по ссылке — только результат
     if(localStorage.getItem('acg_ok')==='1') return;                          // уже разблокировано на этом устройстве
