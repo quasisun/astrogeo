@@ -32,4 +32,10 @@ return [
     'field_city'      => 'bcity',
     'field_email'     => 'email',
     'field_region'    => 'region',   // поле «Весь мир / Только по России» (если нет — по умолчанию весь мир)
+
+    // --- Джйотиш-наади (отдельный вебхук webhook-nadi.php; тот же secret и Unisender) ---
+    'field_sex'           => 'bsex',                              // поле «Пол» в форме наади (Мужской/Женский)
+    'nadi_app_base'       => 'https://quasisun.github.io/naadi/', // приложение джйотиш-наади
+    'nadi_unisender_list' => '',                                  // id списка Unisender для наади (пусто — тот же, что у астро)
+    'nadi_sender_name'    => 'Светлана Кройцер · Джйотиш-наади',  // имя отправителя в письмах наади
 ];

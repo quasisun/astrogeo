@@ -122,3 +122,49 @@ function acg_send_unisender($cfg, $to, $subject, $bodyHtml, $logFile = null) {
     $j = json_decode($res, true);
     return isset($j['result']);
 }
+
+/* ───────────────────────── Джйотиш-наади ─────────────────────────
+   Отдельный поток (webhook-nadi.php) поверх тех же общих функций выше. */
+
+/** Пол из значения поля формы наади (Мужской/Женский/М/Ж/male/female). По умолчанию 'f'. */
+function nadi_sex($s) {
+    $s = function_exists('mb_strtolower') ? mb_strtolower(trim((string)$s), 'UTF-8') : strtolower(trim((string)$s));
+    if ($s === '') return 'f';
+    if (strpos($s, 'муж') !== false || strpos($s, 'male') === 0 || $s === 'м' || $s === 'm') return 'm';
+    if (strpos($s, 'жен') !== false || strpos($s, 'female') !== false || $s === 'ж' || $s === 'f') return 'f';
+    return 'f';
+}
+
+/** Ссылка на готовый гороскоп наади в формате ридера приложения (#<urlencoded JSON>).
+ *  Часовой пояс приложение добирает само из координат, поэтому в ссылку его не кладём. */
+function nadi_build_link($appBase, $d, $t, $label, $lat, $lon, $sex) {
+    $payload = [
+        'date'  => $d,
+        'time'  => $t,
+        'lat'   => $lat,
+        'lon'   => $lon,
+        'sex'   => $sex,
+        'place' => $label,
+        'tab'   => 'nadi',
+    ];
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
+    return rtrim($appBase, '/') . '/#' . rawurlencode($json);
+}
+
+/** HTML письма клиенту со ссылкой на гороскоп наади. */
+function nadi_email_html($name, $link, $d, $t, $city) {
+    $n = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $c = htmlspecialchars($city, ENT_QUOTES, 'UTF-8');
+    $u = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+    return '<div style="font-family:Arial,sans-serif;font-size:15px;color:#2a2326;line-height:1.6">'
+        . '<p>Здравствуйте' . ($n ? ', ' . $n : '') . '!</p>'
+        . '<p>Спасибо за заказ. Ваш персональный гороскоп (традиционная индийская астрология, система наади) готов:</p>'
+        . '<p><a href="' . $u . '" style="display:inline-block;background:#df2227;color:#fff;'
+        . 'text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:bold">Открыть мой гороскоп</a></p>'
+        . '<p style="font-size:13px;color:#6b6166">Данные расчёта: ' . $d . ' ' . $t . ', ' . $c . '.<br>'
+        . 'Если кнопка не открывается, скопируйте ссылку:<br>'
+        . '<span style="word-break:break-all">' . $u . '</span></p>'
+        . '<p style="font-size:13px;color:#6b6166">С уважением,<br>Светлана Кройцер · '
+        . '<a href="https://goroskop1008.ru">goroskop1008.ru</a></p>'
+        . '</div>';
+}

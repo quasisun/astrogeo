@@ -29,6 +29,18 @@ https://vedastro.ru/astro-pay/webhook.php?key=ВАШ_SECRET
 ```
 Переменные полей формы должны совпадать с `config.php` (`name`, `bdate`, `btime`, `bcity`, `email`).
 
+## Джйотиш-наади (второй поток)
+
+Рядом лежит `webhook-nadi.php` — отдельный «почтальон» для гороскопа наади
+(приложение https://quasisun.github.io/naadi/). Он использует тот же `config.php` и `lib.php`,
+а ссылку собирает в формате ридера наади (`#<JSON{date,time,lat,lon,sex,place,tab}>`).
+Астро-поток (`webhook.php`) при этом не меняется.
+
+- Адрес для формы наади в Tilda: `https://vedastro.ru/astro-pay/webhook-nadi.php?key=ВАШ_SECRET`
+- Поля формы наади: `name`, `bdate`, `btime`, `bcity`, **`bsex`** (Мужской/Женский), `email`.
+- Доп. ключи в `config.php`: `field_sex`, `nadi_app_base`, `nadi_unisender_list` (можно пусто — тот же список), `nadi_sender_name`.
+- Проверка: `https://vedastro.ru/astro-pay/webhook-nadi.php?test=1` → `OK (test)`.
+
 ## Проверка оплаты
 
 Письмо уходит только для оплаченных заказов (`require_payment => true`, функция `acg_is_paid`).
