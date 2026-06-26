@@ -137,7 +137,7 @@ function nadi_sex($s) {
 
 /** Ссылка на готовый гороскоп наади в формате ридера приложения (#<urlencoded JSON>).
  *  Часовой пояс приложение добирает само из координат, поэтому в ссылку его не кладём. */
-function nadi_build_link($appBase, $d, $t, $label, $lat, $lon, $sex) {
+function nadi_build_link($appBase, $d, $t, $label, $lat, $lon, $sex, $tz = null) {
     $payload = [
         'date'  => $d,
         'time'  => $t,
@@ -147,8 +147,30 @@ function nadi_build_link($appBase, $d, $t, $label, $lat, $lon, $sex) {
         'place' => $label,
         'tab'   => 'nadi',
     ];
+    if ($tz !== null && $tz !== '') $payload['tz'] = $tz + 0; // зашиваем пояс → у всех одинаковая Лагна, без сети
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
     return rtrim($appBase, '/') . '/#' . rawurlencode($json);
+}
+
+/** Часовой пояс (сдвиг в часах) для места рождения НА ДАТУ рождения.
+ *  Координаты → IANA-зона (timeapi.io) → исторический сдвиг с DST (PHP DateTimeZone). null при неудаче.
+ *  Кэш по координатам в пределах процесса. */
+function nadi_tz_offset($lat, $lon, $date, $time) {
+    static $zcache = [];
+    $k = round((float) $lat, 4) . ',' . round((float) $lon, 4);
+    if (!array_key_exists($k, $zcache)) {
+        $zone = null;
+        $ch = curl_init('https://timeapi.io/api/timezone/coordinate?latitude=' . rawurlencode($lat) . '&longitude=' . rawurlencode($lon));
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_USERAGENT => 'jyotish-nadi/1.0 (info@goroskop1008.ru)']);
+        $res = curl_exec($ch);
+        if ($res) { $j = json_decode($res, true); if (!empty($j['timeZone'])) $zone = $j['timeZone']; }
+        $zcache[$k] = $zone;
+    }
+    if (!$zcache[$k]) return null;
+    try {
+        $dt = new DateTime(($date ?: '2000-01-01') . ' ' . ($time ?: '12:00'), new DateTimeZone($zcache[$k]));
+        return round($dt->getOffset() / 3600, 2);
+    } catch (\Throwable $e) { return null; }
 }
 
 /** HTML письма клиенту со ссылкой на гороскоп наади. */

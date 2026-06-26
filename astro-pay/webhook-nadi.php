@@ -71,7 +71,8 @@ if ($lat === null) {
 
 // 8) Ссылка на гороскоп + письмо клиенту. Для наади можно отдельные список/имя отправителя.
 $appBase = $cfg['nadi_app_base'] ?? 'https://quasisun.github.io/naadi/';
-$link    = nadi_build_link($appBase, $d, $t, $label, $lat, $lon, $sex);
+$tz      = nadi_tz_offset($lat, $lon, $d, $t); // зашиваем пояс в ссылку → одинаковая Лагна у всех
+$link    = nadi_build_link($appBase, $d, $t, $label, $lat, $lon, $sex, $tz);
 $subject = 'Ваш персональный гороскоп наади';
 $body    = nadi_email_html($name, $link, $d, $t, $label);
 
