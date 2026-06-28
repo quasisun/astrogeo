@@ -275,6 +275,8 @@
       $('result-actions').style.display='block';
       $('results').style.display='block';
       $('natal-section').style.display='block';
+      // Если выбраны конкретные города — показываем сразу их анализ, а не общую картину мира.
+      if(state.analysisCities.length) activateTab('cities');
       $('loader').classList.remove('on');
       if(state.fromShare){ state.fromShare=false; setTimeout(function(){ $('result-top').scrollIntoView({behavior:'smooth'}); }, 150); }
     });
@@ -405,6 +407,13 @@
       };
       rows.appendChild(row);
     });
+    // Сворачивание легенды (на мобильном по умолчанию — чтобы не перекрывала карту).
+    var lg=$('legend'), h=lg&&lg.querySelector('h4');
+    if(h && !h._wired){
+      h._wired=true;
+      h.onclick=function(){ lg.classList.toggle('collapsed'); };
+      if(window.innerWidth<=600) lg.classList.add('collapsed');
+    }
   }
 
   /* ---------- Шапка результата: имя и данные человека ---------- */
@@ -808,12 +817,15 @@
   }
 
   /* ---------- Вкладки ---------- */
+  function activateTab(pane){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on', x.dataset.pane===pane);});
+    document.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('on');});
+    var p=$('pane-'+pane); if(p) p.classList.add('on');
+  }
   function setupTabs(){
     $('tabs').addEventListener('click',function(e){
       var t=e.target.closest('.tab'); if(!t)return;
-      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});
-      document.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('on');});
-      t.classList.add('on'); $('pane-'+t.dataset.pane).classList.add('on');
+      activateTab(t.dataset.pane);
     });
   }
 

@@ -147,9 +147,12 @@
   // Чем сильнее зум — тем больше мелких городов проявляется. Антиналожение по сетке.
   MapView.prototype._drawCities=function(c){
     var self=this, W=this.W, H=this.H, z=this.z;
-    var cell=46;                                  // шаг сетки антиналожения (px)
+    // Антиналожение по сетке. Когда показываем подписи — ячейка шире (подпись длиннее точки),
+    // иначе названия налезают друг на друга при сильном зуме.
+    var withLabels = z>=2.0;
+    var cw = withLabels ? 112 : 44, ch = withLabels ? 26 : 44;
     var occ=Object.create(null);
-    function key(x,y){ return ((x/cell)|0)+'|'+((y/cell)|0); }
+    function key(x,y){ return ((x/cw)|0)+'|'+((y/ch)|0); }
 
     // 1) оценённые города (как раньше): цветные по благоприятности, занимают ячейки
     var lo=(this.cityLo!=null)?this.cityLo:45, hi=(this.cityHi!=null)?this.cityHi:80, rng=(hi-lo)||1;
