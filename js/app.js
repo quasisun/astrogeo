@@ -1070,8 +1070,24 @@
   }
 
   /* ---------- Инициализация ---------- */
+  // Автоподгон высоты при встраивании в iframe (Tilda): сообщаем родителю высоту контента,
+  // чтобы блок рос/сжимался под превью (после расчёта высота меняется). Без скролла внутри.
+  function setupAutoResize(){
+    if(window.parent===window) return;            // не в iframe — ничего не шлём
+    var post=function(){
+      try{ window.parent.postMessage({type:'acg-resize',
+        height: Math.ceil(document.documentElement.getBoundingClientRect().height)}, '*'); }catch(e){}
+    };
+    post();
+    window.addEventListener('load', post);
+    window.addEventListener('resize', post);
+    if(window.ResizeObserver){ try{ new ResizeObserver(post).observe(document.body); }catch(e){} }
+    setTimeout(post, 400); setTimeout(post, 1500);  // после первичной отрисовки и шрифтов
+  }
+
   function init(){
     setupAccess();
+    setupAutoResize();
     var yr=$('year'); if(yr) yr.textContent=new Date().getFullYear();
     fillTZ(); fillFilters(); renderChips();
     setupAutocomplete('in-place','ac-place',function(c){
